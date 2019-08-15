@@ -11,3 +11,10 @@ few files.
 
 Create a build directory and place the Makefile there. Later run make in your
 favorite terminal window alias command prompt to build the rubygem.
+
+** CHANGES **
+
+- Added Block Fullscreen function
+- Included as many keys as possible
+- Created a Ruby Rect class
+- Added Gosu::Song#position and #position_seconds methods
