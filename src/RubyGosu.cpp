@@ -876,6 +876,7 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 #define  SWIG_NullReferenceError   -13
 
 #include <ruby.h>
+#include "debugwriter.h"
 void rect_class_init();
 
 /* Ruby 1.9.1 has a "memoisation optimisation" when compiling with GCC which
@@ -8051,17 +8052,20 @@ fail:
 SWIGINTERN VALUE _wrap_Song_position(VALUE self) {
   Gosu::Song *arg1 = (Gosu::Song *) 0;
   void *argp1 = 0;
+  float pos;
   int res1 = 0;
   res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
   if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "pause", 1, self));
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "position", 1, self));
   arg1 = reinterpret_cast< Gosu::Song * >(argp1);
   try {
-    (arg1)->position();
+    pos = (arg1)->position();
   } catch (const std::exception& e) {
+    return DBL2NUM(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  return Qnil;
+  Debug() << pos;
+  return DBL2NUM(pos);
 fail:
   return Qnil;
 }
@@ -8069,17 +8073,20 @@ fail:
 SWIGINTERN VALUE _wrap_Song_position_seconds(VALUE self) {
   Gosu::Song *arg1 = (Gosu::Song *) 0;
   void *argp1 = 0;
+  float pos;
   int res1 = 0;
   res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
   if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "pause", 1, self));
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "position", 1, self));
   arg1 = reinterpret_cast< Gosu::Song * >(argp1);
   try {
-    (arg1)->position_seconds();
+    pos = (arg1)->position_seconds();
   } catch (const std::exception& e) {
+    return DBL2NUM(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  return Qnil;
+  Debug() << pos;
+  return DBL2NUM(pos);
 fail:
   return Qnil;
 }

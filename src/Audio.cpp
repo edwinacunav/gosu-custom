@@ -145,8 +145,11 @@ public:
   virtual void stop() = 0;
   virtual void update() = 0;
 
-  float position() const
+  float position()
   {
+    float pos = 0.0;
+    alGetSourcef(al_source_for_songs(), AL_SEC_OFFSET, &pos);
+    position_ += pos;
     return position_;
   }
 
@@ -340,12 +343,6 @@ public:
     ALint state;
     alGetSourcei(al_source_for_songs(), AL_SOURCE_STATE, &state);
     return state == AL_PAUSED;
-  }
-
-  float position()
-  {
-    alGetSourcef(al_source_for_songs(), AL_SEC_OFFSET, &position_);
-    return position_;
   }
 
   void update() override
