@@ -1,7 +1,8 @@
 *** Kyonides's Gosu Fork ***
 (C) 2019 Extended by Kyonides Arkanthes <kyonides@gmail.com>
 
-Obviously Gosu's code actually belong to Julian Raschke and other contributors.
+Obviously Gosu's code actually belong to Julian Raschke, Jan Lücker and other
+contributors.
 
 I tentantively named it Gosu version 0.15.1 after making slight changes in a
 few files.
