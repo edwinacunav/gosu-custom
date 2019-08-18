@@ -8,7 +8,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <algorithm>
-
+#include "debugwriter.h"
 #ifdef GOSU_IS_MAC
 #import <Foundation/Foundation.h>
 #include <headers/AudioToolboxFile.hpp>
@@ -132,28 +132,21 @@ class Gosu::Song::BaseData
   double volume_;
 
 protected:
-  BaseData() : volume_(1), position_(0) {}
+  BaseData() : volume_(1), frames(0) {}
   virtual void apply_volume() = 0;
 
 public:
-  float position_;
+  int frames;
   virtual ~BaseData() {}
   virtual void play(bool looping) = 0;
   virtual void pause() = 0;
   virtual void resume() = 0;
   virtual bool paused() const = 0;
   virtual void stop() = 0;
+  virtual int sample_rate() = 0;
+  virtual float position() = 0;
+  virtual const char* format() = 0;
   virtual void update() = 0;
-
-  float position()
-  {
-    float pos = 0.0;
-    alGetSourcef(al_source_for_songs(), AL_SEC_OFFSET, &pos);
-    position_ += pos;
-    return position_;
-  }
-
-  void set_position(float pos) { position_ = pos; }
 
   double volume() const { return volume_; }
 
@@ -240,7 +233,7 @@ class Gosu::Song::StreamData : public BaseData
     size_t read_bytes = file->read_data(audio_data, BUFFER_SIZE);
     if (read_bytes > 0) {
       alBufferData(buffer, file->format(), audio_data,
-                   static_cast<ALsizei>(read_bytes), file->sample_rate());
+         static_cast<ALsizei>(read_bytes), file->sample_rate());
     }
     return read_bytes > 0;
   }
@@ -251,15 +244,13 @@ public:
     if (is_ogg_file(filename)) {
       File source_file(filename);
       file.reset(new OggFile(source_file.front_reader()));
-    }
-    else {
+    } else {
     #ifdef GOSU_IS_MAC
       file.reset(new AudioToolboxFile(filename));
     #else
       try {
         file.reset(new SndFile(filename));
-      }
-      catch (const runtime_error& ex) {
+      } catch (const runtime_error& ex) {
         File source_file(filename);
         file.reset(new MPEGFile(source_file.front_reader()));
       }
@@ -273,8 +264,7 @@ public:
   {
     if (is_ogg_file(reader)) {
       file.reset(new OggFile(reader));
-    }
-    else {
+    } else {
     #ifdef GOSU_IS_MAC
       file.reset(new AudioToolboxFile(reader));
     #else
@@ -291,8 +281,7 @@ public:
   }
 
   ~StreamData()
-  {
-    // It's hard to free things in the right order in Ruby/Gosu.
+  { // It's hard to free things in the right order in Ruby/Gosu.
     // Make sure buffers aren't deleted after the context/device are shut down.
     if (!al_initialized()) return;
     alDeleteBuffers(2, buffers);
@@ -322,9 +311,7 @@ public:
     ALuint buffer;
     int queued;
     alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
-    while (queued--) {
-      alSourceUnqueueBuffers(source, 1, &buffer);
-    }
+    while (queued--) { alSourceUnqueueBuffers(source, 1, &buffer); }
     file->rewind();
   }
 
@@ -345,6 +332,38 @@ public:
     return state == AL_PAUSED;
   }
 
+  float position() override
+  {
+    float pos;
+    alGetSourcef(al_source_for_songs(), AL_SEC_OFFSET, &pos);
+    return static_cast<float>(frames) / file->sample_rate() + pos;
+  }
+
+  void set_position(float pos) { pos * file->sample_rate(); }
+
+  const char* format()
+  {
+    switch (file->format()) {
+    case AL_FORMAT_MONO16:
+      return "Mono";
+    case AL_FORMAT_STEREO16:
+      return "Stereo";
+    case AL_FORMAT_QUAD16:
+      return "Quad";
+    case AL_FORMAT_51CHN16:
+      return "5.1C";
+    case AL_FORMAT_61CHN16:
+      return "6.1C";
+    case AL_FORMAT_71CHN16:
+      return "7.1C";
+    }
+  }
+
+  int sample_rate() override
+  {
+    return file->sample_rate();
+  }
+
   void update() override
   {
     ALuint source = al_source_for_songs();
@@ -352,8 +371,13 @@ public:
     int processed;
     bool active = true;
     alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
+    ALint bits, size, channels;
     for (int i = 0; i < processed; ++i) {
       alSourceUnqueueBuffers(source, 1, &buffer);
+      alGetBufferi(buffer, AL_BITS, &bits);
+      alGetBufferi(buffer, AL_SIZE, &size);
+      alGetBufferi(buffer, AL_CHANNELS, &channels);
+      if (bits > 0 && channels > 0) frames += ((size / (bits / 8)) / channels);
       active = stream_to_buffer(buffer);
       if (active) alSourceQueueBuffers(source, 1, &buffer);
     }
@@ -362,17 +386,14 @@ public:
     if (active && state != AL_PLAYING && state != AL_PAUSED) {
       // We seemingly got starved.
       alSourcePlay(source);
-    }
-    else if (!active) {
-      // We got starved and there is nothing left to play.
+    } else if (!active) {
+      // We got starved and there is nothing left to play
       stop();
-      if (cur_song_looping) {
-          // Start anew.
-          play(true);
-      }
-      else {
-          // Let the world know we're finished.
-          cur_song = nullptr;
+      if (cur_song_looping) {// Start anew
+        play(true);
+      } else {// Let the world know we're finished
+        frames = 0;
+        cur_song = nullptr;
       }
     }
   }
@@ -408,23 +429,20 @@ Gosu::Song* Gosu::Song::current_song()
 
 void Gosu::Song::play(bool looping)
 {
-  if (paused()) {
-    data->resume();
-  }
+  if (paused()) data->resume();
   if (cur_song && cur_song != this) {
     cur_song->stop();
     assert (cur_song == nullptr);
   }
-  if (cur_song == nullptr) {
-    data->play(looping);
-  }
+  if (cur_song == nullptr) data->play(looping);
   cur_song = this;
   cur_song_looping = looping;
 }
 
 void Gosu::Song::pause()
 {
-  if (cur_song == this) { data->pause(); }
+  Debug() << "Position" << data->position();
+  if (cur_song == this) data->pause();
 }
 
 bool Gosu::Song::paused() const
@@ -434,10 +452,9 @@ bool Gosu::Song::paused() const
 
 void Gosu::Song::stop()
 {
-  if (cur_song == this) {
-    data->stop();
-    cur_song = nullptr;
-  }
+  if (cur_song != this) return;
+  data->stop();
+  cur_song = nullptr;
 }
 
 bool Gosu::Song::playing() const
@@ -450,9 +467,14 @@ float Gosu::Song::position() const
   return data->position();
 }
 
-float Gosu::Song::position_seconds()
+float Gosu::Song::position_minutes()
 {
-  return data->position() / 60.0f;
+  return (int)data->position() / 60;
+}
+
+float Gosu::Song::position_hours()
+{
+  return (int)data->position() / 60 / 60;
 }
 
 double Gosu::Song::volume() const
@@ -465,9 +487,17 @@ void Gosu::Song::set_volume(double volume)
   data->set_volume(volume);
 }
 
+const char* Gosu::Song::format()
+{
+  return data->format();
+}
+
+int Gosu::Song::sample_rate() const
+{
+  return data->sample_rate();
+}
+
 void Gosu::Song::update()
 {
-  if (current_song()) {
-    current_song()->data->update();
-  }
+  if (current_song()) current_song()->data->update();
 }

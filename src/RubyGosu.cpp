@@ -3336,8 +3336,7 @@ void SwigDirector_Window::drop(std::string const &filename) {
 }
 
 
-SWIGINTERN VALUE
-_wrap_milliseconds(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_milliseconds(int argc, VALUE *argv, VALUE self) {
   unsigned long result;
   VALUE vresult = Qnil;
   
@@ -8064,29 +8063,86 @@ SWIGINTERN VALUE _wrap_Song_position(VALUE self) {
     return DBL2NUM(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  Debug() << pos;
   return DBL2NUM(pos);
 fail:
   return Qnil;
 }
 
-SWIGINTERN VALUE _wrap_Song_position_seconds(VALUE self) {
+SWIGINTERN VALUE _wrap_Song_position_minutes(VALUE self) {
   Gosu::Song *arg1 = (Gosu::Song *) 0;
   void *argp1 = 0;
   float pos;
   int res1 = 0;
   res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
   if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "position", 1, self));
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "position_minutes", 1, self));
   arg1 = reinterpret_cast< Gosu::Song * >(argp1);
   try {
-    pos = (arg1)->position_seconds();
+    pos = (arg1)->position_minutes();
   } catch (const std::exception& e) {
     return DBL2NUM(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  Debug() << pos;
   return DBL2NUM(pos);
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_position_hours(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  float pos;
+  int res1 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "position_hours", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    pos = (arg1)->position_hours();
+  } catch (const std::exception& e) {
+    return DBL2NUM(0.0);
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return DBL2NUM(pos);
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_format(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  const char* fmt;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "format", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    fmt = (arg1)->format();
+  } catch (const std::exception& e) {
+    return rb_str_new_cstr("unknown");
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return rb_str_new_cstr(fmt);
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_sample_rate(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0, sr = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "sample_rate", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    sr = (arg1)->sample_rate();
+  } catch (const std::exception& e) {
+    return RB_INT2FIX(0);
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return RB_INT2FIX(sr);
 fail:
   return Qnil;
 }
@@ -8347,8 +8403,7 @@ fail:
 }
 
 
-SWIGINTERN VALUE
-_wrap_TextInput_filter(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_TextInput_filter(int argc, VALUE *argv, VALUE self) {
   Gosu::TextInput *arg1 = (Gosu::TextInput *) 0 ;
   std::string arg2 ;
   void *argp1 = 0 ;
@@ -9832,41 +9887,26 @@ fail:
 
 SWIGINTERN VALUE
 _wrap_Window_set_mouse_position(int argc, VALUE *argv, VALUE self) {
-  Gosu::Window *arg1 = (Gosu::Window *) 0 ;
-  double arg2 ;
-  double arg3 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  double val2 ;
-  int ecode2 = 0 ;
-  double val3 ;
-  int ecode3 = 0 ;
-  
-  if ((argc < 2) || (argc > 2)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Window, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window *","set_mouse_position", 1, self )); 
-  }
+  Gosu::Window *arg1 = (Gosu::Window *) 0;
+  double arg2, arg3, val2, val3;
+  void *argp1 = 0;
+  int res1 = 0, ecode2 = 0, ecode3 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Window, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Window", "set_mouse_position", 1, self));
   arg1 = reinterpret_cast< Gosu::Window * >(argp1);
   ecode2 = SWIG_AsVal_double(argv[0], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","set_mouse_position", 2, argv[0] ));
-  } 
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "Float", "set_mouse_position", 2, argv[0]));
   arg2 = static_cast< double >(val2);
   ecode3 = SWIG_AsVal_double(argv[1], &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "double","set_mouse_position", 3, argv[1] ));
-  } 
+  if (!SWIG_IsOK(ecode3))
+    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError("", "Float", "set_mouse_position", 3, argv[1]));
   arg3 = static_cast< double >(val3);
-  {
-    try {
-      Gosu_Window_set_mouse_position(arg1,arg2,arg3);
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    Gosu_Window_set_mouse_position(arg1, arg2, arg3);
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   return Qnil;
 fail:
@@ -11740,7 +11780,6 @@ extern "C"
 #endif
 SWIGEXPORT void Init_gosu(void) {
   size_t i;
-  
   SWIG_InitRuntime();
   mGosu = rb_define_module("Gosu");
   mInput = rb_define_module("Input");
@@ -11753,6 +11792,7 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_const(mGosu, "MAJOR_VERSION", SWIG_From_int(static_cast< int >(0)));
   rb_define_const(mGosu, "MINOR_VERSION", SWIG_From_int(static_cast< int >(15)));
   rb_define_const(mGosu, "POINT_VERSION", SWIG_From_int(static_cast< int >(1)));
+  rb_define_const(mGosu, "CONTRIBUTORS", rb_str_new_cstr("Julian Raschke, Jan Lücker, Kyonides Arkanthes and others"));
   rb_define_module_function(mGosu, "milliseconds", VALUEFUNC(_wrap_milliseconds), -1);
   rb_define_module_function(mGosu, "random", VALUEFUNC(_wrap_random), -1);
   rb_define_module_function(mGosu, "degrees_to_radians", VALUEFUNC(_wrap_degrees_to_radians), -1);
@@ -11903,7 +11943,10 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_method(SwigClassSong.klass, "volume", VALUEFUNC(_wrap_Song_volume), 0);
   rb_define_method(SwigClassSong.klass, "volume=", VALUEFUNC(_wrap_Song_volumee___), 1);
   rb_define_method(SwigClassSong.klass, "position", VALUEFUNC(_wrap_Song_position), 0);
-  rb_define_method(SwigClassSong.klass, "position_seconds", VALUEFUNC(_wrap_Song_position_seconds), 0);
+  rb_define_method(SwigClassSong.klass, "position_minutes", VALUEFUNC(_wrap_Song_position_minutes), 0);
+  rb_define_method(SwigClassSong.klass, "position_hours", VALUEFUNC(_wrap_Song_position_hours), 0);
+  rb_define_method(SwigClassSong.klass, "format", VALUEFUNC(_wrap_Song_format), 0);
+  rb_define_method(SwigClassSong.klass, "sample_rate", VALUEFUNC(_wrap_Song_sample_rate), 0);
   rb_define_singleton_method(SwigClassSong.klass, "update", VALUEFUNC(_wrap_Song_update), 0);
   SwigClassSong.mark = 0;
   SwigClassSong.destroy = (void (*)(void *)) free_Gosu_Song;
@@ -12182,7 +12225,7 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_method(SwigClassWindow.klass, "text_input=", VALUEFUNC(_wrap_Window_text_inpute___), -1);
   rb_define_method(SwigClassWindow.klass, "mouse_x", VALUEFUNC(_wrap_Window_mouse_x), -1);
   rb_define_method(SwigClassWindow.klass, "mouse_y", VALUEFUNC(_wrap_Window_mouse_y), -1);
-  rb_define_method(SwigClassWindow.klass, "set_mouse_position", VALUEFUNC(_wrap_Window_set_mouse_position), -1);
+  rb_define_method(SwigClassWindow.klass, "set_mouse_position", VALUEFUNC(_wrap_Window_set_mouse_position), 2);
   rb_define_method(SwigClassWindow.klass, "mouse_x=", VALUEFUNC(_wrap_Window_mouse_xe___), -1);
   rb_define_method(SwigClassWindow.klass, "mouse_y=", VALUEFUNC(_wrap_Window_mouse_ye___), -1);
   rb_define_method(SwigClassWindow.klass, "close!", VALUEFUNC(_wrap_Window_closeN___), -1);

@@ -55,7 +55,6 @@ ALCcontext* Gosu::al_context()
 Gosu::Channel Gosu::allocate_channel()
 {
   al_initialize();
-
   // Start looking at index 1 to keep one free channel for songs.
   for (int i = 1; i < CHANNELS; ++i) {
     // Do not interrupt any playing or paused samples.

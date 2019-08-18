@@ -102,9 +102,8 @@ public:
   //! provided audio system and loads the song data from a stream.
   explicit Song(Reader reader);
   ~Song();
-  //! Returns the song currently being played or paused, or 0 if
-  //! no song has been played yet or the last song has finished
-  //! playing.
+  //! Returns the song currently being played or paused, or 0 if no
+  //! song has been played yet or the last song has finished playing.
   static Song* current_song();
   //! Starts or resumes playback of the song. This will stop all other
   //! songs and set the current song to this object.
@@ -112,10 +111,13 @@ public:
   //! Pauses playback of the song. It is not considered being played.
   //! current_song will stay the same.
   float position() const;
-  float position_seconds();
+  float position_minutes();
+  float position_hours();
+  const char* position_string();
+  const char* format();
+  int sample_rate() const;
   void pause();
-  //! Returns true if the song is the current song, but in paused
-  //! mode.
+  //! Returns true if the song is the current song, but in paused mode.
   bool paused() const;
   //! Stops playback of this song if it is currently played or paused.
   //! Afterwards, current_song will return nullptr.
