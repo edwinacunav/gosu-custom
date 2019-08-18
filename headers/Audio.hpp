@@ -119,6 +119,7 @@ public:
   void pause();
   //! Returns true if the song is the current song, but in paused mode.
   bool paused() const;
+  void resume();
   //! Stops playback of this song if it is currently played or paused.
   //! Afterwards, current_song will return nullptr.
   void stop();

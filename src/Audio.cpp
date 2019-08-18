@@ -339,7 +339,7 @@ public:
     return static_cast<float>(frames) / file->sample_rate() + pos;
   }
 
-  void set_position(float pos) { pos * file->sample_rate(); }
+  void set_position(float pos) { frames = pos * file->sample_rate(); }
 
   const char* format()
   {
@@ -441,13 +441,17 @@ void Gosu::Song::play(bool looping)
 
 void Gosu::Song::pause()
 {
-  Debug() << "Position" << data->position();
   if (cur_song == this) data->pause();
 }
 
 bool Gosu::Song::paused() const
 {
   return cur_song == this && data->paused();
+}
+
+void Gosu::Song::resume()
+{
+  if (paused()) data->resume();
 }
 
 void Gosu::Song::stop()

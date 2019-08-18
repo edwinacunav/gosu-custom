@@ -876,7 +876,7 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 #define  SWIG_NullReferenceError   -13
 
 #include <ruby.h>
-#include "debugwriter.h"
+
 void rect_class_init();
 
 /* Ruby 1.9.1 has a "memoisation optimisation" when compiling with GCC which
@@ -8152,8 +8152,7 @@ SWIGINTERN VALUE _wrap_Song_pausedq___(VALUE self) {
   void *argp1 = 0;
   int res1 = 0;
   bool result;
-  VALUE vresult = Qnil;
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Song, 0 | 0);
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
   if (!SWIG_IsOK(res1))
     SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "paused", 1, self));
   arg1 = reinterpret_cast< Gosu::Song * >(argp1);
@@ -8162,12 +8161,28 @@ SWIGINTERN VALUE _wrap_Song_pausedq___(VALUE self) {
   } catch (const std::exception& e) {
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  vresult = SWIG_From_bool(static_cast< bool >(result));
-  return vresult;
+  return result ? Qtrue : Qfalse;
 fail:
   return Qnil;
 }
 
+SWIGINTERN VALUE _wrap_Song_resume(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "resume", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    (arg1)->resume();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return Qnil;
+fail:
+  return Qnil;
+}
 
 SWIGINTERN VALUE _wrap_Song_stop(VALUE self) {
   Gosu::Song *arg1 = (Gosu::Song *) 0;
@@ -8187,27 +8202,21 @@ fail:
   return Qnil;
 }
 
-
 SWIGINTERN VALUE _wrap_Song_playingq___(VALUE self) {
   Gosu::Song *arg1 = (Gosu::Song *) 0;
   void *argp1 = 0;
   int res1 = 0;
   bool result;
-  VALUE vresult = Qnil;
   res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
   if (!SWIG_IsOK(res1))
     SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "playing", 1, self));
   arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  {
-    try {
-      result = (bool)((Gosu::Song const *)arg1)->playing();
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    result = (bool)((Gosu::Song const *)arg1)->playing();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  vresult = SWIG_From_bool(static_cast< bool >(result));
-  return vresult;
+  return result ? Qtrue : Qfalse;
 fail:
   return Qnil;
 }
@@ -11938,6 +11947,7 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_method(SwigClassSong.klass, "play", VALUEFUNC(_wrap_Song_play), -1);
   rb_define_method(SwigClassSong.klass, "pause", VALUEFUNC(_wrap_Song_pause), 0);
   rb_define_method(SwigClassSong.klass, "paused?", VALUEFUNC(_wrap_Song_pausedq___), 0);
+  rb_define_method(SwigClassSong.klass, "resume", VALUEFUNC(_wrap_Song_resume), 0);
   rb_define_method(SwigClassSong.klass, "stop", VALUEFUNC(_wrap_Song_stop), 0);
   rb_define_method(SwigClassSong.klass, "playing?", VALUEFUNC(_wrap_Song_playingq___), 0);
   rb_define_method(SwigClassSong.klass, "volume", VALUEFUNC(_wrap_Song_volume), 0);
