@@ -110,10 +110,11 @@ public:
   void play(bool looping = false);
   //! Pauses playback of the song. It is not considered being played.
   //! current_song will stay the same.
-  float position() const;
-  float position_minutes();
-  float position_hours();
-  const char* position_string();
+  int position() const;
+  int position_minutes();
+  int position_hours();
+  void set_position(float pos);
+  float duration() const;
   const char* format();
   int sample_rate() const;
   void pause();

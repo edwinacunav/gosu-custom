@@ -8060,10 +8060,10 @@ SWIGINTERN VALUE _wrap_Song_position(VALUE self) {
   try {
     pos = (arg1)->position();
   } catch (const std::exception& e) {
-    return DBL2NUM(0.0);
+    return rb_float_new(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  return DBL2NUM(pos);
+  return rb_float_new(pos);
 fail:
   return Qnil;
 }
@@ -8080,10 +8080,10 @@ SWIGINTERN VALUE _wrap_Song_position_minutes(VALUE self) {
   try {
     pos = (arg1)->position_minutes();
   } catch (const std::exception& e) {
-    return DBL2NUM(0.0);
+    return rb_float_new(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  return DBL2NUM(pos);
+  return rb_float_new(pos);
 fail:
   return Qnil;
 }
@@ -8099,6 +8099,45 @@ SWIGINTERN VALUE _wrap_Song_position_hours(VALUE self) {
   arg1 = reinterpret_cast< Gosu::Song * >(argp1);
   try {
     pos = (arg1)->position_hours();
+  } catch (const std::exception& e) {
+    return rb_float_new(0.0);
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return rb_float_new(pos);
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_positioneq(VALUE self, VALUE rpos) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "position=", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    (arg1)->set_position(rb_num2dbl(rpos));
+  } catch (const std::exception& e) {
+    return rb_float_new(0.0);
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return rpos;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_duration(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  float pos;
+  int res1 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "duration", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    pos = (arg1)->duration();
   } catch (const std::exception& e) {
     return DBL2NUM(0.0);
     SWIG_exception(SWIG_RuntimeError, e.what());
@@ -11955,6 +11994,8 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_method(SwigClassSong.klass, "position", VALUEFUNC(_wrap_Song_position), 0);
   rb_define_method(SwigClassSong.klass, "position_minutes", VALUEFUNC(_wrap_Song_position_minutes), 0);
   rb_define_method(SwigClassSong.klass, "position_hours", VALUEFUNC(_wrap_Song_position_hours), 0);
+  rb_define_method(SwigClassSong.klass, "position=", VALUEFUNC(_wrap_Song_positioneq), 1);
+  rb_define_method(SwigClassSong.klass, "duration", VALUEFUNC(_wrap_Song_duration), 0);
   rb_define_method(SwigClassSong.klass, "format", VALUEFUNC(_wrap_Song_format), 0);
   rb_define_method(SwigClassSong.klass, "sample_rate", VALUEFUNC(_wrap_Song_sample_rate), 0);
   rb_define_singleton_method(SwigClassSong.klass, "update", VALUEFUNC(_wrap_Song_update), 0);

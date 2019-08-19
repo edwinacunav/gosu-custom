@@ -150,8 +150,6 @@ public:
       default:
         throw std::runtime_error("Too many channels in audio file");
       };
-      //case #:
-      //  return AL_FORMAT_REAR16;
     }
 
     ALuint sample_rate() const override
@@ -168,6 +166,16 @@ public:
     void rewind() override
     {
       sf_seek(file, 0, SEEK_SET);
+    }
+
+    float duration() override
+    {
+      return (float)info.frames / info.samplerate;
+    }
+
+    void seek_pos(float pos) override
+    {
+      sf_seek(file, pos, SEEK_SET);
     }
   };
 }

@@ -25,6 +25,8 @@ namespace Gosu
     virtual ALuint sample_rate() const = 0;
     virtual std::size_t read_data(void* dest, std::size_t length) = 0;
     virtual void rewind() = 0;
+    virtual float duration() = 0;
+    virtual void seek_pos(float pos) = 0;
 
     const std::vector<char>& decoded_data()
     {

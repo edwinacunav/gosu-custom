@@ -144,7 +144,9 @@ public:
   virtual bool paused() const = 0;
   virtual void stop() = 0;
   virtual int sample_rate() = 0;
-  virtual float position() = 0;
+  virtual float position() const = 0;
+  virtual void set_position(float pos) = 0;
+  virtual float duration() const = 0;
   virtual const char* format() = 0;
   virtual void update() = 0;
 
@@ -152,7 +154,7 @@ public:
 
   void set_volume(double volume)
   {
-    volume_ = clamp(volume, 0.0, 1.0);
+    volume_ = clamp(volume, 0.0, 1.2);
     apply_volume();
   }
 };
@@ -332,14 +334,23 @@ public:
     return state == AL_PAUSED;
   }
 
-  float position() override
+  float position() const override
   {
     float pos;
     alGetSourcef(al_source_for_songs(), AL_SEC_OFFSET, &pos);
     return static_cast<float>(frames) / file->sample_rate() + pos;
   }
 
-  void set_position(float pos) { frames = pos * file->sample_rate(); }
+  void set_position(float pos) override
+  {
+    frames = pos * file->sample_rate();
+    file->seek_pos(frames);
+  }
+
+  float duration() const override
+  {
+    return file->duration();
+  }
 
   const char* format()
   {
@@ -466,19 +477,29 @@ bool Gosu::Song::playing() const
   return cur_song == this && !data->paused();
 }
 
-float Gosu::Song::position() const
+int Gosu::Song::position() const
 {
-  return data->position();
+  return (int)data->position();
 }
 
-float Gosu::Song::position_minutes()
+int Gosu::Song::position_minutes()
 {
   return (int)data->position() / 60;
 }
 
-float Gosu::Song::position_hours()
+int Gosu::Song::position_hours()
 {
   return (int)data->position() / 60 / 60;
+}
+
+void Gosu::Song::set_position(float pos)
+{
+  data->set_position(pos);
+}
+
+float Gosu::Song::duration() const
+{
+  return data->duration();
 }
 
 double Gosu::Song::volume() const
