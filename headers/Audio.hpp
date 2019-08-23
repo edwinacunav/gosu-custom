@@ -110,13 +110,6 @@ public:
   void play(bool looping = false);
   //! Pauses playback of the song. It is not considered being played.
   //! current_song will stay the same.
-  int position() const;
-  int position_minutes();
-  int position_hours();
-  void set_position(float pos);
-  float duration() const;
-  const char* format();
-  int sample_rate() const;
   void pause();
   //! Returns true if the song is the current song, but in paused mode.
   bool paused() const;
@@ -130,6 +123,13 @@ public:
   double volume() const;
   //! \param volume Can be anything from 0.0 (silence) to 1.0 (full volume).
   void set_volume(double volume);
+  int position() const;
+  int position_minutes();
+  int position_hours();
+  void set_position(float pos);
+  float duration() const;
+  const char* format();
+  int sample_rate() const;
   //! Called every tick by Window for management purposes.
   static void update();
 };

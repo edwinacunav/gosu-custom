@@ -154,7 +154,7 @@ public:
 
   void set_volume(double volume)
   {
-    volume_ = clamp(volume, 0.0, 1.2);
+    volume_ = clamp(volume, 0.0, 1.5);
     apply_volume();
   }
 };

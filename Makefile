@@ -80,12 +80,12 @@ cflags   = $(optflags) $(debugflags) $(warnflags)
 cxxflags = $(optflags) $(debugflags) $(warnflags)
 optflags = -O3
 debugflags = -ggdb3
-warnflags = -Wall -Wextra -Wno-unused-parameter -Wno-parentheses -Wno-long-long -Wno-missing-field-initializers -Wno-tautological-compare -Wno-parentheses-equality -Wno-constant-logical-operand -Wno-self-assign -Wunused-variable -Wimplicit-int -Wpointer-arith -Wwrite-strings -Wdeclaration-after-statement -Wimplicit-function-declaration -Wdeprecated-declarations -Wmisleading-indentation -Wno-packed-bitfield-compat -Wsuggest-attribute=noreturn -Wsuggest-attribute=format -Wimplicit-fallthrough=0 -Wduplicated-cond -Wrestrict
+warnflags = -w
 CCDLFLAGS = -fPIC
 CFLAGS   = $(CCDLFLAGS) -g -O2 -fdebug-prefix-map=/build/ruby2.6-VnpVLW/ruby2.6-2.6.1=. -fstack-protector-strong -Wformat -Werror=format-security -fPIC -DGOSU_DEPRECATED=  -D_REENTRANT      $(ARCH_FLAG)
 INCFLAGS = -I../headers -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I.. -I/usr/include/libdrm -I/usr/include/SDL2 -I/usr/include/AL -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/libpng16
 DEFS     = 
-CPPFLAGS = -DHAVE_AL_AL_H -Wdate-time -D_FORTIFY_SOURCE=2 $(DEFS) $(cppflags)
+CPPFLAGS = -DHAVE_AL_AL_H -Wdate-time -D_FORTIFY_SOURCE=2 $(DEFS) $(cppflags) -w
 CXXFLAGS = $(CCDLFLAGS) -g -O2 -fdebug-prefix-map=/build/ruby2.6-VnpVLW/ruby2.6-2.6.1=. -fstack-protector-strong -Wformat -Werror=format-security -std=gnu++11  -D_REENTRANT      $(ARCH_FLAG)
 ldflags  = -L. -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fstack-protector -rdynamic -Wl,-export-dynamic 
 dldflags = -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,--compress-debug-sections=zlib 
@@ -136,11 +136,11 @@ extout_prefix =
 target_prefix = 
 LOCAL_LIBS = 
 LIBS = $(LIBRUBYARG_SHARED) -lopenal  -lGL -lSDL2 -lvorbisfile -lopenal -lsndfile -lmpg123 -lfontconfig -lfreetype -lpthread -lgmp -ldl -lcrypt -lm   -lc
-ORIG_SRCS = Audio.cpp AudioImpl.cpp Bitmap.cpp BitmapIO.cpp BlockAllocator.cpp Channel.cpp Color.cpp DirectoriesUnix.cpp FileUnix.cpp Font.cpp Graphics.cpp IO.cpp Image.cpp Input.cpp Inspection.cpp LargeImageData.cpp Macro.cpp MarkupParser.cpp Math.cpp OffScreenTarget.cpp Resolution.cpp RubyGosu.cpp RubyRect.cpp TexChunk.cpp Text.cpp TextBuilder.cpp TextInput.cpp Texture.cpp TimingUnix.cpp Transform.cpp TrueTypeFont.cpp TrueTypeFontUnix.cpp Utility.cpp Version.cpp WinMain.cpp Window.cpp stb_vorbis.c utf8proc.c
+ORIG_SRCS = Audio.cpp AudioImpl.cpp Bitmap.cpp BitmapIO.cpp BlockAllocator.cpp Channel.cpp Color.cpp DirectoriesUnix.cpp FileUnix.cpp Font.cpp Graphics.cpp IO.cpp Image.cpp Input.cpp Inspection.cpp LargeImageData.cpp Macro.cpp MarkupParser.cpp Math.cpp OffScreenTarget.cpp Resolution.cpp RubyExt.cpp RubyGosu.cpp TexChunk.cpp Text.cpp TextBuilder.cpp TextInput.cpp Texture.cpp TimingUnix.cpp Transform.cpp TrueTypeFont.cpp TrueTypeFontUnix.cpp Utility.cpp Version.cpp WinMain.cpp Window.cpp stb_vorbis.c utf8proc.c
 SRCS = $(ORIG_SRCS) 
-OBJS = Audio.o AudioImpl.o Bitmap.o BitmapIO.o BlockAllocator.o Channel.o Color.o DirectoriesUnix.o FileUnix.o Font.o Graphics.o IO.o Image.o Input.o Inspection.o LargeImageData.o Macro.o MarkupParser.o Math.o OffScreenTarget.o Resolution.o RubyGosu.o RubyRect.o TexChunk.o Text.o TextBuilder.o TextInput.o Texture.o TimingUnix.o Transform.o TrueTypeFont.o TrueTypeFontUnix.o Utility.o Version.o WinMain.o Window.o stb_vorbis.o utf8proc.o
+OBJS = Audio.o AudioImpl.o Bitmap.o BitmapIO.o BlockAllocator.o Channel.o Color.o DirectoriesUnix.o FileUnix.o Font.o Graphics.o IO.o Image.o Input.o Inspection.o LargeImageData.o Macro.o MarkupParser.o Math.o OffScreenTarget.o Resolution.o RubyExt.o RubyGosu.o TexChunk.o Text.o TextBuilder.o TextInput.o Texture.o TimingUnix.o Transform.o TrueTypeFont.o TrueTypeFontUnix.o Utility.o Version.o WinMain.o Window.o stb_vorbis.o utf8proc.o
 HDRS = 
-LOCAL_HDRS = 
+LOCAL_HDRS = headers/debugwriter.h
 TARGET = gosu
 TARGET_NAME = gosu
 TARGET_ENTRY = Init_$(TARGET_NAME)

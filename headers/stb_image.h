@@ -312,7 +312,6 @@ RECENT REVISION HISTORY:
 enum
 {
    STBI_default = 0, // only used for desired_channels
-
    STBI_grey       = 1,
    STBI_grey_alpha = 2,
    STBI_rgb        = 3,
@@ -343,9 +342,9 @@ extern "C" {
 
 typedef struct
 {
-   int      (*read)  (void *user,char *data,int size);   // fill 'data' with 'size' bytes.  return number of bytes actually read
-   void     (*skip)  (void *user,int n);                 // skip the next 'n' bytes, or 'unget' the last -n bytes if negative
-   int      (*eof)   (void *user);                       // returns nonzero if we are at end of file/data
+  int      (*read)  (void *user,char *data,int size);   // fill 'data' with 'size' bytes.  return number of bytes actually read
+  void     (*skip)  (void *user,int n);                 // skip the next 'n' bytes, or 'unget' the last -n bytes if negative
+  int      (*eof)   (void *user);                       // returns nonzero if we are at end of file/data
 } stbi_io_callbacks;
 
 ////////////////////////////////////
@@ -444,6 +443,7 @@ STBIDEF void stbi_set_unpremultiply_on_load(int flag_true_if_should_unpremultipl
 STBIDEF void stbi_convert_iphone_png_to_rgb(int flag_true_if_should_convert);
 
 // flip the image vertically, so the first pixel in the output array is the bottom left
+STBIDEF void stbi_set_flip_horizontally_on_load(int flag_true_if_should_flip);
 STBIDEF void stbi_set_flip_vertically_on_load(int flag_true_if_should_flip);
 
 // ZLIB client - used by PNG, available for other purposes
@@ -951,7 +951,7 @@ static void *stbi__malloc_mad4(int a, int b, int c, int d, int add)
 
 STBIDEF void stbi_image_free(void *retval_from_stbi_load)
 {
-   STBI_FREE(retval_from_stbi_load);
+  STBI_FREE(retval_from_stbi_load);
 }
 
 #ifndef STBI_NO_LINEAR
@@ -962,72 +962,72 @@ static float   *stbi__ldr_to_hdr(stbi_uc *data, int x, int y, int comp);
 static stbi_uc *stbi__hdr_to_ldr(float   *data, int x, int y, int comp);
 #endif
 
+static int stbi_horizontally_flip_on_load = 0;
+
+STBIDEF void stbi_set_flip_horizontally_on_load(int flag_true_if_should_flip)
+{
+  stbi_horizontally_flip_on_load = flag_true_if_should_flip;
+}
+
 static int stbi__vertically_flip_on_load = 0;
 
 STBIDEF void stbi_set_flip_vertically_on_load(int flag_true_if_should_flip)
 {
-    stbi__vertically_flip_on_load = flag_true_if_should_flip;
+  stbi__vertically_flip_on_load = flag_true_if_should_flip;
 }
 
 static void *stbi__load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__result_info *ri, int bpc)
 {
-   memset(ri, 0, sizeof(*ri)); // make sure it's initialized if we add new fields
-   ri->bits_per_channel = 8; // default is 8 so most paths don't have to be changed
-   ri->channel_order = STBI_ORDER_RGB; // all current input & output are this, but this is here so we can add BGR order
-   ri->num_channels = 0;
-
-   #ifndef STBI_NO_JPEG
-   if (stbi__jpeg_test(s)) return stbi__jpeg_load(s,x,y,comp,req_comp, ri);
-   #endif
-   #ifndef STBI_NO_PNG
-   if (stbi__png_test(s))  return stbi__png_load(s,x,y,comp,req_comp, ri);
-   #endif
-   #ifndef STBI_NO_BMP
-   if (stbi__bmp_test(s))  return stbi__bmp_load(s,x,y,comp,req_comp, ri);
-   #endif
-   #ifndef STBI_NO_GIF
-   if (stbi__gif_test(s))  return stbi__gif_load(s,x,y,comp,req_comp, ri);
-   #endif
-   #ifndef STBI_NO_PSD
-   if (stbi__psd_test(s))  return stbi__psd_load(s,x,y,comp,req_comp, ri, bpc);
-   #endif
-   #ifndef STBI_NO_PIC
-   if (stbi__pic_test(s))  return stbi__pic_load(s,x,y,comp,req_comp, ri);
-   #endif
-   #ifndef STBI_NO_PNM
-   if (stbi__pnm_test(s))  return stbi__pnm_load(s,x,y,comp,req_comp, ri);
-   #endif
-
-   #ifndef STBI_NO_HDR
-   if (stbi__hdr_test(s)) {
-      float *hdr = stbi__hdr_load(s, x,y,comp,req_comp, ri);
-      return stbi__hdr_to_ldr(hdr, *x, *y, req_comp ? req_comp : *comp);
-   }
-   #endif
-
-   #ifndef STBI_NO_TGA
-   // test tga last because it's a crappy test!
-   if (stbi__tga_test(s))
-      return stbi__tga_load(s,x,y,comp,req_comp, ri);
-   #endif
-
-   return stbi__errpuc("unknown image type", "Image not of any known type, or corrupt");
+  memset(ri, 0, sizeof(*ri)); // make sure it's initialized if we add new fields
+  ri->bits_per_channel = 8; // default is 8 so most paths don't have to be changed
+  ri->channel_order = STBI_ORDER_RGB; // all current input & output are this, but this is here so we can add BGR order
+  ri->num_channels = 0;
+  #ifndef STBI_NO_JPEG
+  if (stbi__jpeg_test(s)) return stbi__jpeg_load(s,x,y,comp,req_comp, ri);
+  #endif
+  #ifndef STBI_NO_PNG
+  if (stbi__png_test(s))  return stbi__png_load(s,x,y,comp,req_comp, ri);
+  #endif
+  #ifndef STBI_NO_BMP
+  if (stbi__bmp_test(s))  return stbi__bmp_load(s,x,y,comp,req_comp, ri);
+  #endif
+  #ifndef STBI_NO_GIF
+  if (stbi__gif_test(s))  return stbi__gif_load(s,x,y,comp,req_comp, ri);
+  #endif
+  #ifndef STBI_NO_PSD
+  if (stbi__psd_test(s))  return stbi__psd_load(s,x,y,comp,req_comp, ri, bpc);
+  #endif
+  #ifndef STBI_NO_PIC
+  if (stbi__pic_test(s))  return stbi__pic_load(s,x,y,comp,req_comp, ri);
+  #endif
+  #ifndef STBI_NO_PNM
+  if (stbi__pnm_test(s))  return stbi__pnm_load(s,x,y,comp,req_comp, ri);
+  #endif
+  #ifndef STBI_NO_HDR
+  if (stbi__hdr_test(s)) {
+    float *hdr = stbi__hdr_load(s, x,y,comp,req_comp, ri);
+    return stbi__hdr_to_ldr(hdr, *x, *y, req_comp ? req_comp : *comp);
+  }
+  #endif
+  #ifndef STBI_NO_TGA
+  // test tga last because it's a crappy test!
+  if (stbi__tga_test(s))
+    return stbi__tga_load(s,x,y,comp,req_comp, ri);
+  #endif
+  return stbi__errpuc("unknown image type", "Image not of any known type, or corrupt");
 }
 
 static stbi_uc *stbi__convert_16_to_8(stbi__uint16 *orig, int w, int h, int channels)
 {
-   int i;
-   int img_len = w * h * channels;
-   stbi_uc *reduced;
-
-   reduced = (stbi_uc *) stbi__malloc(img_len);
-   if (reduced == NULL) return stbi__errpuc("outofmem", "Out of memory");
-
-   for (i = 0; i < img_len; ++i)
-      reduced[i] = (stbi_uc)((orig[i] >> 8) & 0xFF); // top half of each byte is sufficient approx of 16->8 bit scaling
-
-   STBI_FREE(orig);
-   return reduced;
+  int i;
+  int img_len = w * h * channels;
+  stbi_uc *reduced;
+  reduced = (stbi_uc *) stbi__malloc(img_len);
+  if (reduced == NULL) return stbi__errpuc("outofmem", "Out of memory");
+  for (i = 0; i < img_len; ++i)
+    reduced[i] = (stbi_uc)((orig[i] >> 8) & 0xFF); // top half of each byte is sufficient approx of 16->8 bit scaling
+  STBI_FREE(orig);
+  return reduced;
 }
 
 static stbi__uint16 *stbi__convert_8_to_16(stbi_uc *orig, int w, int h, int channels)
@@ -1035,109 +1035,148 @@ static stbi__uint16 *stbi__convert_8_to_16(stbi_uc *orig, int w, int h, int chan
    int i;
    int img_len = w * h * channels;
    stbi__uint16 *enlarged;
-
    enlarged = (stbi__uint16 *) stbi__malloc(img_len*2);
    if (enlarged == NULL) return (stbi__uint16 *) stbi__errpuc("outofmem", "Out of memory");
-
    for (i = 0; i < img_len; ++i)
       enlarged[i] = (stbi__uint16)((orig[i] << 8) + orig[i]); // replicate to high and low byte, maps 0->0, 255->0xffff
-
    STBI_FREE(orig);
    return enlarged;
 }
+#include "debugwriter.h"
+static void stbi_horizontal_flip(void *image, int w, int h, int bytes_per_pixel)
+{
+  int col;
+  size_t bytes_per_col = (size_t)h * bytes_per_pixel;
+  stbi_uc temp[sizeof(image)];
+  stbi_uc *bytes = (stbi_uc *)image;
+  int x = 0;
+  for (int n = w * h * bytes_per_pixel - 1; n < bytes_per_pixel; n -= bytes_per_pixel) {
+    temp[x] = bytes[n - 1] + bytes_per_pixel; // Y1->Y0
+    temp[x + 1] = bytes[n - 2]; // U
+    temp[x + 2] = bytes[n - 3]; // Y0->Y1
+    temp[x + 3] = bytes[n]; // V
+    x += bytes_per_pixel;
+  }
+  *bytes = *temp;
+}
+/*for (col = 0; col < (w>>1); col++) {
+    stbi_uc *col0 = bytes + (w - col - 1) * bytes_per_col;
+    stbi_uc *col1 = bytes + (h - col - 1) * bytes_per_col;
+    // swap col0 with col1
+    size_t bytes_left = bytes_per_col;
+    while (bytes_left) {
+      size_t bytes_copy = (bytes_left < sizeof(temp)) ? bytes_left : sizeof(temp);
+      memcpy(temp, col0, bytes_copy);
+      memcpy(col0, col1, bytes_copy);
+      memcpy(col1, temp, bytes_copy);
+      col0 += bytes_copy;
+      col1 += bytes_copy;
+      bytes_left -= bytes_copy;
+    }
+  }
+}*/
 
 static void stbi__vertical_flip(void *image, int w, int h, int bytes_per_pixel)
 {
-   int row;
-   size_t bytes_per_row = (size_t)w * bytes_per_pixel;
-   stbi_uc temp[2048];
-   stbi_uc *bytes = (stbi_uc *)image;
+  int row;
+  size_t bytes_per_row = (size_t)w * bytes_per_pixel;
+  stbi_uc temp[2048];
+  stbi_uc *bytes = (stbi_uc *)image;
+  for (row = 0; row < (h>>1); row++) {
+    stbi_uc *row0 = bytes + row * bytes_per_row;
+    stbi_uc *row1 = bytes + (h - row - 1) * bytes_per_row;
+    // swap row0 with row1
+    size_t bytes_left = bytes_per_row;
+    while (bytes_left) {
+      size_t bytes_copy = (bytes_left < sizeof(temp)) ? bytes_left : sizeof(temp);
+      memcpy(temp, row0, bytes_copy);
+      memcpy(row0, row1, bytes_copy);
+      memcpy(row1, temp, bytes_copy);
+      row0 += bytes_copy;
+      row1 += bytes_copy;
+      bytes_left -= bytes_copy;
+    }
+  }
+}
 
-   for (row = 0; row < (h>>1); row++) {
-      stbi_uc *row0 = bytes + row*bytes_per_row;
-      stbi_uc *row1 = bytes + (h - row - 1)*bytes_per_row;
-      // swap row0 with row1
-      size_t bytes_left = bytes_per_row;
-      while (bytes_left) {
-         size_t bytes_copy = (bytes_left < sizeof(temp)) ? bytes_left : sizeof(temp);
-         memcpy(temp, row0, bytes_copy);
-         memcpy(row0, row1, bytes_copy);
-         memcpy(row1, temp, bytes_copy);
-         row0 += bytes_copy;
-         row1 += bytes_copy;
-         bytes_left -= bytes_copy;
-      }
-   }
+static void stbi_horizontal_flip_slices(void *image, int w, int h, int z, int bytes_per_pixel)
+{
+  int slice;
+  int slice_size = w * h * bytes_per_pixel;
+  stbi_uc *bytes = (stbi_uc *)image;
+  for (slice = 0; slice < z; ++slice) {
+    stbi_horizontal_flip(bytes, w, h, bytes_per_pixel);
+    bytes += slice_size;
+  }
 }
 
 static void stbi__vertical_flip_slices(void *image, int w, int h, int z, int bytes_per_pixel)
 {
-   int slice;
-   int slice_size = w * h * bytes_per_pixel;
-
-   stbi_uc *bytes = (stbi_uc *)image;
-   for (slice = 0; slice < z; ++slice) {
-      stbi__vertical_flip(bytes, w, h, bytes_per_pixel); 
-      bytes += slice_size; 
-   }
+  int slice;
+  int slice_size = w * h * bytes_per_pixel;
+  stbi_uc *bytes = (stbi_uc *)image;
+  for (slice = 0; slice < z; ++slice) {
+    stbi__vertical_flip(bytes, w, h, bytes_per_pixel);
+    bytes += slice_size;
+  }
 }
 
 static unsigned char *stbi__load_and_postprocess_8bit(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
-   stbi__result_info ri;
-   void *result = stbi__load_main(s, x, y, comp, req_comp, &ri, 8);
-
-   if (result == NULL)
-      return NULL;
-
-   if (ri.bits_per_channel != 8) {
-      STBI_ASSERT(ri.bits_per_channel == 16);
-      result = stbi__convert_16_to_8((stbi__uint16 *) result, *x, *y, req_comp == 0 ? *comp : req_comp);
-      ri.bits_per_channel = 8;
-   }
-
-   // @TODO: move stbi__convert_format to here
-
-   if (stbi__vertically_flip_on_load) {
-      int channels = req_comp ? req_comp : *comp;
-      stbi__vertical_flip(result, *x, *y, channels * sizeof(stbi_uc));
-   }
-
-   return (unsigned char *) result;
+  stbi__result_info ri;
+  void *result = stbi__load_main(s, x, y, comp, req_comp, &ri, 8);
+  if (result == NULL) return NULL;
+  if (ri.bits_per_channel != 8) {
+    STBI_ASSERT(ri.bits_per_channel == 16);
+    result = stbi__convert_16_to_8((stbi__uint16 *) result, *x, *y, req_comp == 0 ? *comp : req_comp);
+    ri.bits_per_channel = 8;
+  }
+  // @TODO: move stbi__convert_format to here
+  if (stbi_horizontally_flip_on_load) {
+    int channels = req_comp ? req_comp : *comp;
+    stbi_horizontal_flip(result, *x, *y, channels * sizeof(stbi_uc));
+  }
+  if (stbi__vertically_flip_on_load) {
+    int channels = req_comp ? req_comp : *comp;
+    stbi__vertical_flip(result, *x, *y, channels * sizeof(stbi_uc));
+  }
+  return (unsigned char *) result;
 }
 
 static stbi__uint16 *stbi__load_and_postprocess_16bit(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
-   stbi__result_info ri;
-   void *result = stbi__load_main(s, x, y, comp, req_comp, &ri, 16);
-
-   if (result == NULL)
-      return NULL;
-
-   if (ri.bits_per_channel != 16) {
-      STBI_ASSERT(ri.bits_per_channel == 8);
-      result = stbi__convert_8_to_16((stbi_uc *) result, *x, *y, req_comp == 0 ? *comp : req_comp);
-      ri.bits_per_channel = 16;
-   }
-
-   // @TODO: move stbi__convert_format16 to here
-   // @TODO: special case RGB-to-Y (and RGBA-to-YA) for 8-bit-to-16-bit case to keep more precision
-
-   if (stbi__vertically_flip_on_load) {
-      int channels = req_comp ? req_comp : *comp;
-      stbi__vertical_flip(result, *x, *y, channels * sizeof(stbi__uint16));
-   }
-
-   return (stbi__uint16 *) result;
+  stbi__result_info ri;
+  void *result = stbi__load_main(s, x, y, comp, req_comp, &ri, 16);
+  if (result == NULL) return NULL;
+  if (ri.bits_per_channel != 16) {
+    STBI_ASSERT(ri.bits_per_channel == 8);
+    result = stbi__convert_8_to_16((stbi_uc *) result, *x, *y, req_comp == 0 ? *comp : req_comp);
+    ri.bits_per_channel = 16;
+  }
+  // @TODO: move stbi__convert_format16 to here
+  // @TODO: special case RGB-to-Y (and RGBA-to-YA) for 8-bit-to-16-bit case to keep more precision
+  if (stbi_horizontally_flip_on_load) {
+    int channels = req_comp ? req_comp : *comp;
+    stbi_horizontal_flip(result, *x, *y, channels * sizeof(stbi__uint16));
+  }
+  if (stbi__vertically_flip_on_load) {
+    int channels = req_comp ? req_comp : *comp;
+    stbi__vertical_flip(result, *x, *y, channels * sizeof(stbi__uint16));
+  }
+  return (stbi__uint16 *) result;
 }
 
 #if !defined(STBI_NO_HDR) || !defined(STBI_NO_LINEAR)
 static void stbi__float_postprocess(float *result, int *x, int *y, int *comp, int req_comp)
 {
-   if (stbi__vertically_flip_on_load && result != NULL) {
-      int channels = req_comp ? req_comp : *comp;
-      stbi__vertical_flip(result, *x, *y, channels * sizeof(float));
-   }
+  if (stbi_horizontally_flip_on_load && result != NULL) {
+    int channels = req_comp ? req_comp : *comp;
+    stbi_horizontal_flip(result, *x, *y, channels * sizeof(float));
+  }
+  if (stbi__vertically_flip_on_load && result != NULL) {
+    int channels = req_comp ? req_comp : *comp;
+    stbi__vertical_flip(result, *x, *y, channels * sizeof(float));
+  }
 }
 #endif
 
@@ -5598,28 +5637,24 @@ static void *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int req
          --RLE_count;
       }
       //   do I need to invert the image?
-      if ( tga_inverted )
-      {
-         for (j = 0; j*2 < tga_height; ++j)
-         {
-            int index1 = j * tga_width * tga_comp;
-            int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
-            for (i = tga_width * tga_comp; i > 0; --i)
-            {
-               unsigned char temp = tga_data[index1];
-               tga_data[index1] = tga_data[index2];
-               tga_data[index2] = temp;
-               ++index1;
-               ++index2;
-            }
-         }
+    if ( tga_inverted ) {
+      for (j = 0; j*2 < tga_height; ++j) {
+        int index1 = j * tga_width * tga_comp;
+        int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
+        for (i = tga_width * tga_comp; i > 0; --i) {
+          unsigned char temp = tga_data[index1];
+          tga_data[index1] = tga_data[index2];
+          tga_data[index2] = temp;
+          ++index1;
+          ++index2;
+        }
       }
-      //   clear my palette, if I had one
-      if ( tga_palette != NULL )
-      {
-         STBI_FREE( tga_palette );
-      }
-   }
+    }
+    //   clear my palette, if I had one
+    if ( tga_palette != NULL ) {
+      STBI_FREE( tga_palette );
+    }
+  }
 
    // swap RGB - if the source data was RGB16, it already is in the right order
    if (tga_comp >= 3 && !tga_rgb16)

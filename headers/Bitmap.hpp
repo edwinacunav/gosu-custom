@@ -1,3 +1,6 @@
+/*
+** Modified by Kyonides Arkanthes (C) 2019
+*/
 //! \file Bitmap.hpp
 //! Interface of the Bitmap class.
 
@@ -9,22 +12,22 @@
 #include "Platform.hpp"
 #include <string>
 #include <vector>
-
+#include "debugwriter.h"
 namespace Gosu
-{
-  //! Rectangular area of pixels, each represented by a Color value. Provides
+{ //! Rectangular area of pixels, each represented by a Color value. Provides
   //! minimal drawing functionality and serves as a temporary holder for
   //! graphical resources which are usually turned into Images later.
   //! Has (expensive) value semantics.
   class Bitmap
   {
     unsigned w, h;
-    std::vector<Color> pixels;
 
 public:
+    std::vector<Color> pixels;
     Bitmap() : w(0), h(0) {}
     Bitmap(unsigned w, unsigned h, Color c = Color::NONE)
-    : w(w), h(h), pixels(w * h, c) {}
+    : w(w), h(h), pixels(w * h, c)
+    {}
 
     unsigned width() const
     {
@@ -50,10 +53,11 @@ public:
     {
       pixels[y * w + x] = c;
     }
-
     //! This updates a pixel using the "over" alpha compositing operator, see:
     //! https://en.wikipedia.org/wiki/Alpha_compositing
     void blend_pixel(unsigned x, unsigned y, Color c);
+    //! Inverts the current pixel, ignored if alpha value is 0.
+    void invert_pixel(unsigned x, unsigned y);
     //! Inserts a bitmap at the given position. Parts of the inserted
     //! bitmap that would be outside of the target bitmap will be
     //! clipped away.
@@ -74,7 +78,10 @@ public:
       return &pixels[0];
     }
   };
-
+  void enable_flip_h(bool flip_h);
+  void enable_flip_y(bool flip_y);
+  void enable_flip_h_y(bool flip_h, bool flip_y);
+  void load_image_inverse_color(Bitmap& bitmap, const std::string& filename);
   //! Loads any supported image into a Bitmap.
   void load_image_file(Bitmap& bitmap, const std::string& filename);
   //! Loads any supported image into a Bitmap.

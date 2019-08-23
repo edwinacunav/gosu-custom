@@ -1,0 +1,11 @@
+for (j = 0; j*2 < tga_height; ++j) {
+  int index1 = j * tga_width * tga_comp;
+  int index2 = (tga_height - 1 - j) * tga_width * tga_comp;
+  for (i = tga_width * tga_comp; i > 0; --i) {
+    unsigned char temp = tga_data[index1];
+    tga_data[index1] = tga_data[index2];
+    tga_data[index2] = temp;
+    ++index1;
+    ++index2;
+  }
+}

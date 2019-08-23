@@ -335,8 +335,6 @@ template <typename T> T SwigValueInit() {
 
 /* Flags for new pointer objects */
 #define SWIG_POINTER_OWN           0x1
-
-
 /*
    Flags/methods for returning states.
 
@@ -877,7 +875,7 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 
 #include <ruby.h>
 
-void rect_class_init();
+void ruby_ext_init();
 
 /* Ruby 1.9.1 has a "memoisation optimisation" when compiling with GCC which
  * breaks using rb_intern as an lvalue, as SWIG does.  We work around this
@@ -1472,8 +1470,7 @@ static ID swig_call_id  = 0;
 #endif  /* RUBY_EMBEDDED */
 
 
-SWIGRUNTIME VALUE 
-getExceptionClass(void) {
+SWIGRUNTIME VALUE getExceptionClass(void) {
   static int init = 0;
   static VALUE rubyExceptionClass ;
   if (!init) {
@@ -1481,7 +1478,7 @@ getExceptionClass(void) {
     rubyExceptionClass = rb_const_get(_mSWIG, rb_intern("Exception"));
   }
   return rubyExceptionClass;
-} 
+}
 
 /* This code checks to see if the Ruby object being raised as part
    of an exception inherits from the Ruby class Exception.  If so,
@@ -1543,30 +1540,24 @@ SWIG_Ruby_NewPointerObj(void *ptr, swig_type_info *type, int flags)
     track = sklass->trackObjects;
     if (track) {
       obj = SWIG_RubyInstanceFor(ptr);
-      
       /* Check the object's type and make sure it has the correct type.
         It might not in cases where methods do things like 
         downcast methods. */
       if (obj != Qnil) {
         VALUE value = rb_iv_get(obj, "@__swigtype__");
         const char* type_name = RSTRING_PTR(value);
-				
         if (strcmp(type->name, type_name) == 0) {
           return obj;
         }
       }
     }
-
     /* Create a new Ruby object */
     obj = Data_Wrap_Struct(sklass->klass, VOIDFUNC(sklass->mark), 
 			   ( own ? VOIDFUNC(sklass->destroy) : 
 			     (track ? VOIDFUNC(SWIG_RubyRemoveTracking) : 0 )
 			     ), ptr);
-
     /* If tracking is on for this class then track this object. */
-    if (track) {
-      SWIG_RubyAddTracking(ptr, obj);
-    }
+    if (track) SWIG_RubyAddTracking(ptr, obj);
   } else {
     klass_name = (char *) malloc(4 + strlen(type->name) + 1);
     sprintf(klass_name, "TYPE%s", type->name);
@@ -1575,7 +1566,6 @@ SWIG_Ruby_NewPointerObj(void *ptr, swig_type_info *type, int flags)
     obj = Data_Wrap_Struct(klass, 0, 0, ptr);
   }
   rb_iv_set(obj, "@__swigtype__", rb_str_new2(type->name));
-  
   return obj;
 }
 
@@ -1621,28 +1611,22 @@ SWIG_Ruby_ConvertPtrAndOwn(VALUE obj, void **ptr, swig_type_info *ty, int flags,
   char *c;
   swig_cast_info *tc;
   void *vptr = 0;
-
   /* Grab the pointer */
-  if (NIL_P(obj)) {
-    if (ptr)
-      *ptr = 0;
+  if (RB_NIL_P(obj)) {
+    if (ptr) *ptr = 0;
     return SWIG_OK;
   } else {
-    if (TYPE(obj) != T_DATA) {
-      return SWIG_ERROR;
-    }
+    if (TYPE(obj) != T_DATA) return SWIG_ERROR;
     Data_Get_Struct(obj, void, vptr);
   }
-  
   if (own) {
     own->datafree = RDATA(obj)->dfree;
     own->own = 0;
   }
-    
   /* Check to see if the input object is giving up ownership
      of the underlying C struct or C++ object.  If so then we
-     need to reset the destructor since the Ruby object no 
-     longer owns the underlying C++ object.*/ 
+     need to reset the destructor since the Ruby object no
+     longer owns the underlying C++ object.*/
   if (flags & SWIG_POINTER_DISOWN) {
     /* Is tracking on for this class? */
     int track = 0;
@@ -1650,20 +1634,18 @@ SWIG_Ruby_ConvertPtrAndOwn(VALUE obj, void **ptr, swig_type_info *ty, int flags,
       swig_class *sklass = (swig_class *) ty->clientdata;
       track = sklass->trackObjects;
     }
-		
     if (track) {
       /* We are tracking objects for this class.  Thus we change the destructor
        * to SWIG_RubyRemoveTracking.  This allows us to
        * remove the mapping from the C++ to Ruby object
        * when the Ruby object is garbage collected.  If we don't
-       * do this, then it is possible we will return a reference 
+       * do this, then it is possible we will return a reference
        * to a Ruby object that no longer exists thereby crashing Ruby. */
       RDATA(obj)->dfree = SWIG_RubyRemoveTracking;
-    } else {    
+    } else {
       RDATA(obj)->dfree = 0;
     }
   }
-
   /* Do type-checking if type info was provided */
   if (ty) {
     if (ty->clientdata) {
@@ -1699,13 +1681,11 @@ SWIG_Ruby_ConvertPtrAndOwn(VALUE obj, void **ptr, swig_type_info *ty, int flags,
     if (ptr)
       *ptr = vptr;
   }
-  
   return SWIG_OK;
 }
 
 /* Check convert */
-SWIGRUNTIMEINLINE int
-SWIG_Ruby_CheckConvert(VALUE obj, swig_type_info *ty)
+SWIGRUNTIMEINLINE int SWIG_Ruby_CheckConvert(VALUE obj, swig_type_info *ty)
 {
   char *c = SWIG_MangleStr(obj);
   if (!c) return 0;
@@ -1724,11 +1704,9 @@ SWIG_Ruby_NewPackedObj(void *ptr, int sz, swig_type_info *type) {
 }
 
 /* Convert a packed value value */
-SWIGRUNTIME int
-SWIG_Ruby_ConvertPacked(VALUE obj, void *ptr, int sz, swig_type_info *ty) {
+SWIGRUNTIME int SWIG_Ruby_ConvertPacked(VALUE obj, void *ptr, int sz, swig_type_info *ty) {
   swig_cast_info *tc;
   const char  *c;
-
   if (TYPE(obj) != T_STRING) goto type_error;
   c = StringValuePtr(obj);
   /* Pointer values must start with leading underscore */
@@ -1740,7 +1718,6 @@ SWIG_Ruby_ConvertPacked(VALUE obj, void *ptr, int sz, swig_type_info *ty) {
     if (!tc) goto type_error;
   }
   return SWIG_OK;
-
  type_error:
   return SWIG_ERROR;
 }
@@ -2212,8 +2189,8 @@ static swig_module_info swig_module = {swig_types, 14, 0, 0, 0, 0};
 
 /* -------- TYPES TABLE (END) -------- */
 
-#define SWIG_init    Init_gosu
-#define SWIG_name    "Gosu"
+#define SWIG_init Init_gosu
+#define SWIG_name "Gosu"
 
 static VALUE mGosu, mInput, cWindow;
 
@@ -2258,12 +2235,11 @@ static VALUE mGosu, mInput, cWindow;
 namespace Gosu
 {
     void enable_undocumented_retrofication()
-    {
-        extern bool undocumented_retrofication;
-        undocumented_retrofication = true;
-    }
-    
-    void al_shutdown();
+  {
+    extern bool undocumented_retrofication;
+    undocumented_retrofication = true;
+  }
+  void al_shutdown();
 }
 
 #include <cstring>
@@ -2274,211 +2250,191 @@ namespace Gosu
 
 namespace Gosu
 {
-    void call_ruby_block(VALUE block)
-    {
-        rb_funcall(block, rb_intern("call"), 0);
-    }
+  void call_ruby_block(VALUE block)
+  {
+    rb_funcall(block, rb_intern("call"), 0);
+  }
 
-    void load_bitmap(Bitmap& bitmap, VALUE val)
-    {
-        // Try to treat as filename first.
-        if (rb_respond_to(val, rb_intern("to_str"))) {
-            VALUE to_str = rb_funcall(val, rb_intern("to_str"), 0);
-            const char* filename = StringValuePtr(to_str);
-            load_image_file(bitmap, filename);
-            return;
-        }
+  void load_bitmap(Bitmap& bitmap, VALUE val)
+  { // Try to treat as filename first.
+    if (rb_respond_to(val, rb_intern("to_str"))) {
+      VALUE to_str = rb_funcall(val, rb_intern("to_str"), 0);
+      const char* filename = StringValuePtr(to_str);
+      load_image_file(bitmap, filename);
+      return;
+    }
+    // Otherwise, try to call .to_blob on it (works with RMagick, TexPlay etc).
+    VALUE conversion = rb_str_new2("to_blob { self.format = 'RGBA'; self.depth = 8 }");
+    VALUE blob = rb_obj_instance_eval(1, &conversion, val);
+    rb_check_safe_obj(blob);
+    int width  = NUM2ULONG(rb_funcall(val, rb_intern("columns"), 0));
+    int height = NUM2ULONG(rb_funcall(val, rb_intern("rows"), 0));
+    std::size_t size = width * height * 4;
+    bitmap.resize(width, height, Gosu::Color::NONE);
+    if (RSTRING_LEN(blob) == size) {
+      // 32 bit per pixel, assume R8G8B8A8
+      std::memcpy(bitmap.data(), reinterpret_cast<const unsigned*>(RSTRING_PTR(blob)), size);
+    } else if (RSTRING_LEN(blob) == size * sizeof(float)) {
+      // 128 bit per channel, assume float/float/float/float
+      const float* in = reinterpret_cast<const float*>(RSTRING_PTR(blob));
+      Gosu::Color::Channel* out = reinterpret_cast<Gosu::Color::Channel*>(bitmap.data());
+      for (int i = size; i > 0; --i)
+        *(out++) = static_cast<Color::Channel>(*(in++) * 255);
+    } else {
+      throw std::logic_error("Blob length mismatch");
+    }
+  }
 
-        // Otherwise, try to call .to_blob on it (works with RMagick, TexPlay etc).
-        VALUE conversion = rb_str_new2("to_blob { self.format = 'RGBA'; self.depth = 8 }");
-        VALUE blob = rb_obj_instance_eval(1, &conversion, val);
-        rb_check_safe_obj(blob);
-        int width  = NUM2ULONG(rb_funcall(val, rb_intern("columns"), 0));
-        int height = NUM2ULONG(rb_funcall(val, rb_intern("rows"), 0));
-        
-        std::size_t size = width * height * 4;
-        bitmap.resize(width, height, Gosu::Color::NONE);
-        if (RSTRING_LEN(blob) == size) {
-            // 32 bit per pixel, assume R8G8B8A8
-            std::memcpy(bitmap.data(), reinterpret_cast<const unsigned*>(RSTRING_PTR(blob)), size);
-        }
-        else if (RSTRING_LEN(blob) == size * sizeof(float)) {
-            // 128 bit per channel, assume float/float/float/float
-            const float* in = reinterpret_cast<const float*>(RSTRING_PTR(blob));
-            Gosu::Color::Channel* out = reinterpret_cast<Gosu::Color::Channel*>(bitmap.data());
-            for (int i = size; i > 0; --i) {
-                *(out++) = static_cast<Color::Channel>(*(in++) * 255);
-            }
-        }
-        else {
-            throw std::logic_error("Blob length mismatch");
-        }
-    }
-    
-    const char* cstr_from_symbol(VALUE symbol)
-    {
-        Check_Type(symbol, T_SYMBOL);
-        return rb_id2name(SYM2ID(symbol));
-    }
+  const char* cstr_from_symbol(VALUE symbol)
+  {
+    Check_Type(symbol, T_SYMBOL);
+    return rb_id2name(rb_sym2id(symbol));
+  }
 }
-    
-// Global input functions
 
+// Global input functions
 namespace Gosu
 {
-    Gosu::Button char_to_button_id(std::string ch)
-    {
-        return Gosu::Input::char_to_id(ch);
-    }
-    
-    std::string button_id_to_char(Gosu::Button btn)
-    {
-        return Gosu::Input::id_to_char(btn);
-    }
-    
-    bool is_button_down(Gosu::Button btn)
-    {
-        return Gosu::Input::down(btn);
-    }
+  Gosu::Button char_to_button_id(std::string ch)
+  {
+    return Gosu::Input::char_to_id(ch);
+  }
+
+  std::string button_id_to_char(Gosu::Button btn)
+  {
+    return Gosu::Input::id_to_char(btn);
+  }
+
+  bool is_button_down(Gosu::Button btn)
+  {
+    return Gosu::Input::down(btn);
+  }
 }
 
 // Global graphics functions
 
 namespace Gosu
 {
-    void draw_line(double x1, double y1, Gosu::Color c1,
-                   double x2, double y2, Gosu::Color c2,
-                   Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
-    {
-        Gosu::Graphics::draw_line(x1, y1, c1, x2, y2, c2, z, mode);
-    }
-    
-    void draw_triangle(double x1, double y1, Gosu::Color c1,
-                       double x2, double y2, Gosu::Color c2,
-                       double x3, double y3, Gosu::Color c3,
-                       Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
-    {
-        Gosu::Graphics::draw_triangle(x1, y1, c1, x2, y2, c2, x3, y3, c3, z, mode);
-    }
-    
-    void draw_quad(double x1, double y1, Gosu::Color c1,
-                   double x2, double y2, Gosu::Color c2,
-                   double x3, double y3, Gosu::Color c3,
-                   double x4, double y4, Gosu::Color c4,
-                   Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
-    {
-        Gosu::Graphics::draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, z, mode);
-    }
-    
-    void draw_rect(double x, double y, double width, double height, Gosu::Color c,
-                   Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
-    {
-        Gosu::Graphics::draw_rect(x, y, width, height, c, z, mode);
-    }
-    
-    void flush()
-    {
-        return Gosu::Graphics::flush();
-    }
-    
-    void unsafe_gl()
-    {
-        Gosu::Graphics::gl([] { rb_yield(Qnil); });
-    }
-    
-    void unsafe_gl(Gosu::ZPos z)
-    {
-        VALUE block = rb_block_proc();
-        Gosu::Graphics::gl(z, [block] {
-            Gosu::call_ruby_block(block);
-        });
-    }
-    
-    void clip_to(double x, double y, double width, double height)
-    {
-        Gosu::Graphics::clip_to(x, y, width, height, [] { rb_yield(Qnil); });
-    }
-    
-    Gosu::Image* record(int width, int height) {
-        return new Gosu::Image(Gosu::Graphics::record(width, height, [] { rb_yield(Qnil); }));
-    }
-    
-    Gosu::Image* render(int width, int height, VALUE options = 0) {
-        unsigned image_flags = 0;
-        
-        if (options) {
-            Check_Type(options, T_HASH);
-            
-            VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
-            int keys_size = NUM2INT(rb_funcall(keys, rb_intern("size"), 0, NULL));
-            
-            for (int i = 0; i < keys_size; ++i) {
-                VALUE key = rb_ary_entry(keys, i);
-                const char* key_string = Gosu::cstr_from_symbol(key);
-                
-                VALUE value = rb_hash_aref(options, key);
-                if (!strcmp(key_string, "retro")) {
-                    if (RTEST(value)) image_flags |= Gosu::IF_RETRO;
-                }
-                else {
-                    static bool issued_warning = false;
-                    if (!issued_warning) {
-                        issued_warning = true;
-                        rb_warn("Unknown keyword argument: :%s", key_string);
-                    }
-                }
-            }
+  void draw_line(double x1, double y1, Gosu::Color c1,
+                 double x2, double y2, Gosu::Color c2,
+                 Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
+  {
+      Gosu::Graphics::draw_line(x1, y1, c1, x2, y2, c2, z, mode);
+  }
+
+  void draw_triangle(double x1, double y1, Gosu::Color c1,
+                     double x2, double y2, Gosu::Color c2,
+                     double x3, double y3, Gosu::Color c3,
+                     Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
+  {
+      Gosu::Graphics::draw_triangle(x1, y1, c1, x2, y2, c2, x3, y3, c3, z, mode);
+  }
+
+  void draw_quad(double x1, double y1, Gosu::Color c1,
+                 double x2, double y2, Gosu::Color c2,
+                 double x3, double y3, Gosu::Color c3,
+                 double x4, double y4, Gosu::Color c4,
+                 Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
+  {
+    Gosu::Graphics::draw_quad(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, z, mode);
+  }
+
+  void draw_rect(double x, double y, double width, double height, Gosu::Color c,
+                 Gosu::ZPos z = 0, Gosu::AlphaMode mode = Gosu::AM_DEFAULT)
+  {
+    Gosu::Graphics::draw_rect(x, y, width, height, c, z, mode);
+  }
+
+  void flush()
+  {
+    return Gosu::Graphics::flush();
+  }
+
+  void unsafe_gl()
+  {
+    Gosu::Graphics::gl([] { rb_yield(Qnil); });
+  }
+
+  void unsafe_gl(Gosu::ZPos z)
+  {
+    VALUE block = rb_block_proc();
+    Gosu::Graphics::gl(z, [block] { Gosu::call_ruby_block(block); });
+  }
+
+  void clip_to(double x, double y, double width, double height)
+  {
+    Gosu::Graphics::clip_to(x, y, width, height, [] { rb_yield(Qnil); });
+  }
+
+  Gosu::Image* record(int width, int height) {
+    return new Gosu::Image(Gosu::Graphics::record(width, height, [] { rb_yield(Qnil); }));
+  }
+
+  Gosu::Image* render(int width, int height, VALUE options = 0) {
+    unsigned image_flags = 0;
+    if (options) {
+      Check_Type(options, T_HASH);
+      VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
+      int keys_size = rb_array_len(keys);
+      for (int i = 0; i < keys_size; ++i) {
+        VALUE key = rb_ary_entry(keys, i);
+        const char* key_string = Gosu::cstr_from_symbol(key);
+        VALUE value = rb_hash_aref(options, key);
+        if (!strcmp(key_string, "retro")) {
+          if (RTEST(value)) image_flags |= Gosu::IF_RETRO;
+        } else {
+          static bool issued_warning = false;
+          if (!issued_warning) {
+            issued_warning = true;
+            rb_warn("Unknown keyword argument: :%s", key_string);
+          }
         }
-        
-        return new Gosu::Image(Gosu::Graphics::render(width, height, [] { rb_yield(Qnil); }, image_flags));
+      }
     }
-    
+    return new Gosu::Image(Gosu::Graphics::render(width, height, [] { rb_yield(Qnil); }, image_flags));
+  }
+
     // This method cannot be called "transform" because then it would be an ambiguous overload of
     // Gosu::Transform Gosu::transform(...).
     // So it has to be renamed via %rename below... :( - same for the other transformations.
-    
-    void transform_for_ruby(double m0, double m1, double m2, double m3, double m4, double m5,
-        double m6, double m7, double m8, double m9, double m10, double m11, double m12, double m13,
-        double m14, double m15)
-    {
-        Gosu::Transform transform = {
-            m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15
-        };
-        Gosu::Graphics::transform(transform,
-                                  [] { rb_yield(Qnil); });
-    }
-    
-    void rotate_for_ruby(double angle, double around_x = 0, double around_y = 0)
-    {
-        Gosu::Graphics::transform(Gosu::rotate(angle, around_x, around_y),
-                                  [] { rb_yield(Qnil); });
-    }
-    
-    void scale_for_ruby(double factor)
-    {
-        Gosu::Graphics::transform(Gosu::scale(factor),
-                                  [] { rb_yield(Qnil); });
-    }
-    
-    void scale_for_ruby(double scale_x, double scale_y)
-    {
-        Gosu::Graphics::transform(Gosu::scale(scale_x, scale_y),
-                                  [] { rb_yield(Qnil); });
-    }
-    
-    void scale_for_ruby(double scale_x, double scale_y, double around_x, double around_y)
-    {
-        Gosu::Graphics::transform(Gosu::scale(scale_x, scale_y, around_x, around_y),
-                                  [] { rb_yield(Qnil); });
-    }
-    
-    void translate_for_ruby(double x, double y)
-    {
-        Gosu::Graphics::transform(Gosu::translate(x, y),
-                                  [] { rb_yield(Qnil); });
-    }
-}
 
+  void transform_for_ruby(double m0, double m1, double m2, double m3, double m4, double m5,
+      double m6, double m7, double m8, double m9, double m10, double m11, double m12, double m13,
+      double m14, double m15)
+  {
+    Gosu::Transform transform = {
+      m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15
+    };
+    Gosu::Graphics::transform(transform, [] { rb_yield(Qnil); });
+  }
+
+  void rotate_for_ruby(double angle, double around_x = 0, double around_y = 0)
+  {
+    Gosu::Graphics::transform(Gosu::rotate(angle, around_x, around_y), [] { rb_yield(Qnil); });
+  }
+
+  void scale_for_ruby(double factor)
+  {
+    Gosu::Graphics::transform(Gosu::scale(factor),
+                              [] { rb_yield(Qnil); });
+  }
+
+  void scale_for_ruby(double scale_x, double scale_y)
+  {
+    Gosu::Graphics::transform(Gosu::scale(scale_x, scale_y), [] { rb_yield(Qnil); });
+  }
+
+  void scale_for_ruby(double scale_x, double scale_y, double around_x, double around_y)
+  {
+    Gosu::Graphics::transform(Gosu::scale(scale_x, scale_y, around_x, around_y),
+                              [] { rb_yield(Qnil); });
+  }
+
+  void translate_for_ruby(double x, double y)
+  {
+    Gosu::Graphics::transform(Gosu::translate(x, y), [] { rb_yield(Qnil); });
+  }
+}
 
 #include <limits.h>
 #if !defined(SWIG_NO_LLONG_MAX)
@@ -2489,30 +2445,23 @@ namespace Gosu
 # endif
 #endif
 
+#define SWIG_From_long  LONG2NUM 
 
-  #define SWIG_From_long   LONG2NUM 
-
-
-SWIGINTERNINLINE VALUE
-SWIG_From_int  (int value)
-{    
+SWIGINTERNINLINE VALUE SWIG_From_int(int value)
+{
   return SWIG_From_long  (value);
 }
 
-
 SWIGINTERNINLINE VALUE
-SWIG_From_unsigned_SS_long  (unsigned long value)
+SWIG_From_unsigned_SS_long(unsigned long value)
 {
-  return ULONG2NUM(value); 
+  return ULONG2NUM(value);
 }
 
-
-SWIGINTERN VALUE
-SWIG_ruby_failed(void)
+SWIGINTERN VALUE SWIG_ruby_failed(void)
 {
   return Qnil;
-} 
-
+}
 
 /*@SWIG:/usr/share/swig3.0/ruby/rubyprimtypes.swg,19,%ruby_aux_method@*/
 SWIGINTERN VALUE SWIG_AUX_NUM2DBL(VALUE *args)
@@ -2525,8 +2474,7 @@ SWIGINTERN VALUE SWIG_AUX_NUM2DBL(VALUE *args)
 }
 /*@SWIG@*/
 
-SWIGINTERN int
-SWIG_AsVal_double (VALUE obj, double *val)
+SWIGINTERN int SWIG_AsVal_double(VALUE obj, double *val)
 {
   VALUE type = TYPE(obj);
   if ((type == T_FLOAT) || (type == T_FIXNUM) || (type == T_BIGNUM)) {
@@ -2542,19 +2490,14 @@ SWIG_AsVal_double (VALUE obj, double *val)
   return SWIG_TypeError;
 }
 
+#define SWIG_From_double  rb_float_new 
 
-  #define SWIG_From_double   rb_float_new 
-
-
-SWIGINTERNINLINE VALUE
-SWIG_From_unsigned_SS_int  (unsigned int value)
-{    
-  return SWIG_From_unsigned_SS_long  (value);
+SWIGINTERNINLINE VALUE SWIG_From_unsigned_SS_int(unsigned int value)
+{
+  return SWIG_From_unsigned_SS_long(value);
 }
 
-
 #include <string>
-
 
 /*@SWIG:/usr/share/swig3.0/ruby/rubyprimtypes.swg,19,%ruby_aux_method@*/
 SWIGINTERN VALUE SWIG_AUX_NUM2ULONG(VALUE *args)
@@ -2567,8 +2510,7 @@ SWIGINTERN VALUE SWIG_AUX_NUM2ULONG(VALUE *args)
 }
 /*@SWIG@*/
 
-SWIGINTERN int
-SWIG_AsVal_unsigned_SS_long (VALUE obj, unsigned long *val) 
+SWIGINTERN int SWIG_AsVal_unsigned_SS_long(VALUE obj, unsigned long *val)
 {
   VALUE type = TYPE(obj);
   if ((type == T_FIXNUM) || (type == T_BIGNUM)) {
@@ -2584,9 +2526,7 @@ SWIG_AsVal_unsigned_SS_long (VALUE obj, unsigned long *val)
   return SWIG_TypeError;
 }
 
-
-SWIGINTERN int
-SWIG_AsVal_unsigned_SS_int (VALUE obj, unsigned int *val)
+SWIGINTERN int SWIG_AsVal_unsigned_SS_int(VALUE obj, unsigned int *val)
 {
   unsigned long v;
   int res = SWIG_AsVal_unsigned_SS_long (obj, &v);
@@ -2596,36 +2536,40 @@ SWIG_AsVal_unsigned_SS_int (VALUE obj, unsigned int *val)
     } else {
       if (val) *val = static_cast< unsigned int >(v);
     }
-  }  
+  }
   return res;
 }
 
-
-SWIGINTERNINLINE VALUE
-SWIG_From_unsigned_SS_char  (unsigned char value)
-{    
+SWIGINTERNINLINE VALUE SWIG_From_unsigned_SS_char(unsigned char value)
+{
   return SWIG_From_unsigned_SS_long  (value);
 }
 
 SWIGINTERN Gosu::Color Gosu_Color_rgb(Gosu::Color::Channel r,Gosu::Color::Channel g,Gosu::Color::Channel b){
-        return Gosu::Color(r, g, b);
-    }
+  return Gosu::Color(r, g, b);
+}
+
 SWIGINTERN Gosu::Color Gosu_Color_rgba__SWIG_0(Gosu::Color::Channel r,Gosu::Color::Channel g,Gosu::Color::Channel b,Gosu::Color::Channel a){
-        return Gosu::Color(a, r, g, b);
-    }
+  return Gosu::Color(a, r, g, b);
+}
+
 SWIGINTERN Gosu::Color Gosu_Color_rgba__SWIG_1(std::uint32_t rgba){
-        return Gosu::Color((rgba >>  0) & 0xff, (rgba >> 24) & 0xff,
-                           (rgba >> 16) & 0xff, (rgba >>  8) & 0xff);
-    }
+  return Gosu::Color((rgba >>  0) & 0xff, (rgba >> 24) & 0xff,
+                     (rgba >> 16) & 0xff, (rgba >>  8) & 0xff);
+}
+
 SWIGINTERN Gosu::Color Gosu_Color_argb__SWIG_1(Gosu::Color::Channel a,Gosu::Color::Channel r,Gosu::Color::Channel g,Gosu::Color::Channel b){
-        return Gosu::Color(a, r, g, b);
-    }
+  return Gosu::Color(a, r, g, b);
+}
+
 SWIGINTERN Gosu::Color Gosu_Color_argb__SWIG_2(std::uint32_t argb){
-        return Gosu::Color(argb);
-    }
+  return Gosu::Color(argb);
+}
+
 SWIGINTERN Gosu::Color Gosu_Color_dup(Gosu::Color const *self){
-        return *self;
-    }
+  return *self;
+}
+
 SWIGINTERN std::string Gosu_Color_inspect(Gosu::Color const *self){
         char buffer[32];
         // snprintf is either member of std:: or a #define for ruby_snprintf.
@@ -2647,15 +2591,13 @@ SWIG_pchar_descriptor(void)
   return info;
 }
 
-
-SWIGINTERNINLINE VALUE 
-SWIG_FromCharPtrAndSize(const char* carray, size_t size)
+SWIGINTERNINLINE VALUE SWIG_FromCharPtrAndSize(const char* carray, size_t size)
 {
   if (carray) {
     if (size > LONG_MAX) {
       swig_type_info* pchar_descriptor = SWIG_pchar_descriptor();
-      return pchar_descriptor ? 
-	SWIG_NewPointerObj(const_cast< char * >(carray), pchar_descriptor, 0) : Qnil;
+      return pchar_descriptor ?
+      SWIG_NewPointerObj(const_cast< char * >(carray), pchar_descriptor, 0) : Qnil;
     } else {
       return rb_str_new(carray, static_cast< long >(size));
     }
@@ -2664,43 +2606,38 @@ SWIG_FromCharPtrAndSize(const char* carray, size_t size)
   }
 }
 
-
-SWIGINTERNINLINE VALUE
-SWIG_From_std_string  (const std::string& s)
+SWIGINTERNINLINE VALUE SWIG_From_std_string(const std::string& s)
 {
   return SWIG_FromCharPtrAndSize(s.data(), s.size());
 }
 
 SWIGINTERN bool Gosu_Color_operator_Se__Se_(Gosu::Color const *self,VALUE other){
-        if (TYPE(other) == T_FIXNUM || TYPE(other) == T_BIGNUM) {
-            return *self == Gosu::Color(NUM2ULONG(other));
-        }
-        void* ptr;
-        int res = SWIG_ConvertPtr(other, &ptr, SWIGTYPE_p_Gosu__Color, 0);
-        return SWIG_IsOK(res) && ptr && *self == *reinterpret_cast<Gosu::Color*>(ptr);
-    }
+  if (TYPE(other) == T_FIXNUM || TYPE(other) == T_BIGNUM)
+    return *self == Gosu::Color(NUM2ULONG(other));
+  void* ptr;
+  int res = SWIG_ConvertPtr(other, &ptr, SWIGTYPE_p_Gosu__Color, 0);
+  return SWIG_IsOK(res) && ptr && *self == *reinterpret_cast<Gosu::Color*>(ptr);
+}
 
-SWIGINTERNINLINE VALUE
-SWIG_From_bool  (bool value)
+SWIGINTERNINLINE VALUE SWIG_From_bool(bool value)
 {
   return value ? Qtrue : Qfalse;
 }
-
 
 SWIGINTERN int
 SWIG_AsCharPtrAndSize(VALUE obj, char** cptr, size_t* psize, int *alloc)
 {
   if (TYPE(obj) == T_STRING) {
-    char *cstr = StringValuePtr(obj); 
+    char *cstr = StringValuePtr(obj);
     size_t size = RSTRING_LEN(obj) + 1;
     if (cptr)  {
       if (alloc) {
-	if (*alloc == SWIG_NEWOBJ) {
-	  *cptr = reinterpret_cast< char* >(memcpy(new char[size], cstr, sizeof(char)*(size)));
-	} else {
-	  *cptr = cstr;
-	  *alloc = SWIG_OLDOBJ;
-	}
+        if (*alloc == SWIG_NEWOBJ) {
+          *cptr = reinterpret_cast< char* >(memcpy(new char[size], cstr, sizeof(char)*(size)));
+        } else {
+          *cptr = cstr;
+          *alloc = SWIG_OLDOBJ;
+        }
       }
     }
     if (psize) *psize = size;
@@ -2710,19 +2647,18 @@ SWIG_AsCharPtrAndSize(VALUE obj, char** cptr, size_t* psize, int *alloc)
     if (pchar_descriptor) {
       void* vptr = 0;
       if (SWIG_ConvertPtr(obj, &vptr, pchar_descriptor, 0) == SWIG_OK) {
-	if (cptr) *cptr = (char *)vptr;
-	if (psize) *psize = vptr ? (strlen((char*)vptr) + 1) : 0;
-	if (alloc) *alloc = SWIG_OLDOBJ;
-	return SWIG_OK;
+        if (cptr) *cptr = (char *)vptr;
+        if (psize) *psize = vptr ? (strlen((char*)vptr) + 1) : 0;
+        if (alloc) *alloc = SWIG_OLDOBJ;
+        return SWIG_OK;
       }
     }
-  }  
+  }
   return SWIG_TypeError;
 }
 
 
-SWIGINTERN int
-SWIG_AsPtr_std_string (VALUE obj, std::string **val) 
+SWIGINTERN int SWIG_AsPtr_std_string (VALUE obj, std::string **val)
 {
   char* buf = 0 ; size_t size = 0; int alloc = SWIG_OLDOBJ;
   if (SWIG_IsOK((SWIG_AsCharPtrAndSize(obj, &buf, &size, &alloc)))) {
@@ -2751,7 +2687,6 @@ SWIG_AsPtr_std_string (VALUE obj, std::string **val)
   return SWIG_ERROR;
 }
 
-
 /*@SWIG:/usr/share/swig3.0/ruby/rubyprimtypes.swg,19,%ruby_aux_method@*/
 SWIGINTERN VALUE SWIG_AUX_NUM2LONG(VALUE *args)
 {
@@ -2762,9 +2697,7 @@ SWIGINTERN VALUE SWIG_AUX_NUM2LONG(VALUE *args)
   return obj;
 }
 /*@SWIG@*/
-
-SWIGINTERN int
-SWIG_AsVal_long (VALUE obj, long* val)
+SWIGINTERN int SWIG_AsVal_long (VALUE obj, long* val)
 {
   VALUE type = TYPE(obj);
   if ((type == T_FIXNUM) || (type == T_BIGNUM)) {
@@ -2780,9 +2713,7 @@ SWIG_AsVal_long (VALUE obj, long* val)
   return SWIG_TypeError;
 }
 
-
-SWIGINTERN int
-SWIG_AsVal_int (VALUE obj, int *val)
+SWIGINTERN int SWIG_AsVal_int(VALUE obj, int *val)
 {
   long v;
   int res = SWIG_AsVal_long (obj, &v);
@@ -2792,50 +2723,43 @@ SWIG_AsVal_int (VALUE obj, int *val)
     } else {
       if (val) *val = static_cast< int >(v);
     }
-  }  
+  }
   return res;
 }
 
-SWIGINTERN Gosu::Font *new_Gosu_Font__SWIG_0(Gosu::Window &window,std::string const &font_name,int height){
-        return new Gosu::Font(height, font_name);
-    }
+SWIGINTERN Gosu::Font *new_Gosu_Font__SWIG_0(Gosu::Window &window, std::string const &font_name, int height){
+  return new Gosu::Font(height, font_name);
+}
+
 SWIGINTERN Gosu::Font *new_Gosu_Font__SWIG_1(int height,VALUE options=0){
-        std::string font_name = Gosu::default_font_name();
-        unsigned font_flags = 0;
-        
-        if (options) {
-            Check_Type(options, T_HASH);
-            
-            VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
-            int keys_size = NUM2INT(rb_funcall(keys, rb_intern("size"), 0, NULL));
-            
-            for (int i = 0; i < keys_size; ++i) {
-                VALUE key = rb_ary_entry(keys, i);
-                const char* key_string = Gosu::cstr_from_symbol(key);
-                
-                VALUE value = rb_hash_aref(options, key);
-                if (!strcmp(key_string, "name")) {
-                    VALUE rb_string = rb_obj_as_string(value);
-                    font_name = StringValueCStr(rb_string);
-                }
-                else if (!strcmp(key_string, "bold")) {
-                    if (RTEST(value)) font_flags |= Gosu::FF_BOLD;
-                }
-                else if (!strcmp(key_string, "italic")) {
-                    if (RTEST(value)) font_flags |= Gosu::FF_ITALIC;
-                }
-                else if (!strcmp(key_string, "underline")) {
-                    if (RTEST(value)) font_flags |= Gosu::FF_UNDERLINE;
-                }
-                else {
-                    static bool issued_warning = false;
-                    if (!issued_warning) {
-                        issued_warning = true;
-                        rb_warn("Unknown keyword argument: :%s", key_string);
-                    }
-                }
-            }
+  std::string font_name = Gosu::default_font_name();
+  unsigned font_flags = 0;
+  if (options) {
+    Check_Type(options, T_HASH);
+    VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
+    int keys_size = rb_array_len(keys);
+    for (int i = 0; i < keys_size; ++i) {
+      VALUE key = rb_ary_entry(keys, i);
+      const char* key_string = Gosu::cstr_from_symbol(key);
+      VALUE value = rb_hash_aref(options, key);
+      if (!strcmp(key_string, "name")) {
+        VALUE rb_string = rb_obj_as_string(value);
+        font_name = StringValueCStr(rb_string);
+      } else if (!strcmp(key_string, "bold")) {
+        if (RTEST(value)) font_flags |= Gosu::FF_BOLD;
+      } else if (!strcmp(key_string, "italic")) {
+        if (RTEST(value)) font_flags |= Gosu::FF_ITALIC;
+      } else if (!strcmp(key_string, "underline")) {
+        if (RTEST(value)) font_flags |= Gosu::FF_UNDERLINE;
+      } else {
+        static bool issued_warning = false;
+        if (!issued_warning) {
+          issued_warning = true;
+          rb_warn("Unknown keyword argument: :%s", key_string);
         }
+      }
+    }
+  }
   return new Gosu::Font(height, font_name, font_flags);
 }
 
@@ -2848,181 +2772,125 @@ SWIGINTERN double Gosu_Font_markup_width(Gosu::Font *self, std::string const &ma
   }*/
   return self->markup_width(markup);//* scale_x;
 }
-
-SWIGINTERN Gosu::Image *new_Gosu_Image(VALUE source,VALUE options=0){
-        Gosu::Bitmap bmp;
-        Gosu::load_bitmap(bmp, source);
-        
-        unsigned src_x = 0, src_y = 0;
-        unsigned src_width = bmp.width(), src_height = bmp.height();
-        unsigned flags = 0;
-        
-        if (options) {
-            Check_Type(options, T_HASH);
-            
-            VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
-            int keys_size = NUM2INT(rb_funcall(keys, rb_intern("size"), 0, NULL));
-            
-            for (int i = 0; i < keys_size; ++i) {
-                VALUE key = rb_ary_entry(keys, i);
-                const char* key_string = Gosu::cstr_from_symbol(key);
-                
-                VALUE value = rb_hash_aref(options, key);
-                if (!strcmp(key_string, "tileable")) {
-                    if (RTEST(value)) flags |= Gosu::IF_TILEABLE;
-                }
-                else if (!strcmp(key_string, "retro")) {
-                    if (RTEST(value)) flags |= Gosu::IF_RETRO;
-                }
-                else if (!strcmp(key_string, "rect")) {
-                    Check_Type(value, T_ARRAY);
-                    
-                    int rect_size = NUM2INT(rb_funcall(value, rb_intern("size"), 0, NULL));
-                    if (rect_size != 4) {
-                        rb_raise(rb_eArgError, "Argument passed to :rect must be a four-element "
-                                               "Array [x, y, width, height]");
-                    }
-                    
-                    src_x      = NUM2INT(rb_ary_entry(value, 0));
-                    src_y      = NUM2INT(rb_ary_entry(value, 1));
-                    src_width  = NUM2INT(rb_ary_entry(value, 2));
-                    src_height = NUM2INT(rb_ary_entry(value, 3));
-                }
-                else {
-                    static bool issued_warning = false;
-                    if (!issued_warning) {
-                        issued_warning = true;
-                        rb_warn("Unknown keyword argument: :%s", key_string);
-                    }
-                }
-            }
-        }
-        
-        return new Gosu::Image(bmp, src_x, src_y, src_width, src_height, flags);
-    }
-SWIGINTERN void Gosu_Image_draw_as_quad(Gosu::Image *self,double x1,double y1,Gosu::Color c1,double x2,double y2,Gosu::Color c2,double x3,double y3,Gosu::Color c3,double x4,double y4,Gosu::Color c4,Gosu::ZPos z,Gosu::AlphaMode mode=Gosu::AM_DEFAULT){
-        self->data().draw(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, z, mode);
-    }
-SWIGINTERN Gosu::GLTexInfo *Gosu_Image_gl_tex_info(Gosu::Image const *self){
-        const Gosu::GLTexInfo* info = self->data().gl_tex_info();
-        return info ? new Gosu::GLTexInfo(*info) : nullptr;
-    }
-SWIGINTERN Gosu::Image *Gosu_Image_subimage(Gosu::Image *self,int x,int y,int w,int h){
-        std::unique_ptr<Gosu::ImageData> image_data = self->data().subimage(x, y, w, h);
-        return image_data.get() ? new Gosu::Image(std::move(image_data)) : nullptr;
-    }
-SWIGINTERN Gosu::Image *Gosu_Image_from_text(std::string const &markup,double font_height,VALUE options=0){
-        std::string font = Gosu::default_font_name();
-        int width = -1;
-        double spacing = 0;
-        Gosu::Alignment align = Gosu::AL_LEFT;
-        unsigned image_flags = 0;
-        unsigned font_flags = 0;
-        
-        if (options) {
-            Check_Type(options, T_HASH);
-            
-            VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
-            int keys_size = NUM2INT(rb_funcall(keys, rb_intern("size"), 0, NULL));
-            
-            for (int i = 0; i < keys_size; ++i) {
-                VALUE key = rb_ary_entry(keys, i);
-                const char* key_string = Gosu::cstr_from_symbol(key);
-                
-                VALUE value = rb_hash_aref(options, key);
-                if (!strcmp(key_string, "font")) {
-                    font = StringValuePtr(value);
-                }
-                else if (!strcmp(key_string, "bold")) {
-                    if (RTEST(value)) font_flags |= Gosu::FF_BOLD;
-                }
-                else if (!strcmp(key_string, "italic")) {
-                    if (RTEST(value)) font_flags |= Gosu::FF_ITALIC;
-                }
-                else if (!strcmp(key_string, "underline")) {
-                    if (RTEST(value)) font_flags |= Gosu::FF_UNDERLINE;
-                }
-                else if (!strcmp(key_string, "align")) {
-                    const char* cstr = Gosu::cstr_from_symbol(value);
-
-                    if (!strcmp(cstr, "left")) {
-                        align = Gosu::AL_LEFT;
-                    }
-                    else if (!strcmp(cstr, "center")) {
-                        align = Gosu::AL_CENTER;
-                    }
-                    else if (!strcmp(cstr, "right")) {
-                        align = Gosu::AL_RIGHT;
-                    }
-                    else if (!strcmp(cstr, "justify")) {
-                        align = Gosu::AL_JUSTIFY;
-                    }
-                    else {
-                        rb_raise(rb_eArgError, "Argument passed to :align must be a valid text "
-                                 "alignment (:left, :center, :right, :justify)");
-                    }
-                }
-                else if (!strcmp(key_string, "width")) {
-                    width = NUM2INT(value);
-                }
-                else if (!strcmp(key_string, "spacing")) {
-                    spacing = NUM2DBL(value);
-                }
-                else if (!strcmp(key_string, "retro")) {
-                    if (RTEST(value)) image_flags |= Gosu::IF_RETRO;
-                }
-                else {
-                    static bool issued_warning = false;
-                    if (!issued_warning) {
-                        issued_warning = true;
-                        rb_warn("Unknown keyword argument: :%s", key_string);
-                    }
-                }
-            }
-        }
-        
-        Gosu::Bitmap bitmap = Gosu::layout_markup(markup, font, font_height, spacing, width,
-                                                  align, font_flags);
-        return new Gosu::Image(bitmap, image_flags);
-    }
-SWIGINTERN std::vector< Gosu::Image > Gosu_Image_load_tiles__SWIG_0(VALUE source,int tile_width,int tile_height,VALUE options=0){
-        Gosu::Bitmap bmp;
-        Gosu::load_bitmap(bmp, source);
-        
-        unsigned flags = 0;
-        
-        if (options) {
-            Check_Type(options, T_HASH);
-            
-            VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
-            int keys_size = NUM2INT(rb_funcall(keys, rb_intern("size"), 0, NULL));
-            
-            for (int i = 0; i < keys_size; ++i) {
-                VALUE key = rb_ary_entry(keys, i);
-                const char* key_string = Gosu::cstr_from_symbol(key);
-                
-                VALUE value = rb_hash_aref(options, key);
-                if (!strcmp(key_string, "tileable")) {
-                    if (RTEST(value)) flags |= Gosu::IF_TILEABLE;
-                }
-                else if (!strcmp(key_string, "retro")) {
-                    if (RTEST(value)) flags |= Gosu::IF_RETRO;
-                }
-                else {
-                    static bool issued_warning = false;
-                    if (!issued_warning) {
-                        issued_warning = true;
-                        rb_warn("Unknown keyword argument: :%s", key_string);
-                    }
-                }
-            }
-        }
-        return Gosu::load_tiles(bmp, tile_width, tile_height, flags);
-    }
-
-SWIGINTERN int
-SWIG_AsVal_bool (VALUE obj, bool *val)
+//#include "debugwriter.h"
+static VALUE get_hash_value(VALUE options, char *name)
 {
+  rb_hash_delete(options, rb_id2sym(rb_intern(name)));
+}
+
+SWIGINTERN Gosu::Image *new_Gosu_Image(VALUE source, VALUE options=0) {
+  Gosu::Bitmap bmp;
+  unsigned flags = 0, src_x = 0, src_y = 0;
+  unsigned src_width = 0, src_height = 0, normal_color = 1;
+  Gosu::enable_flip_h_y(false, false);
+  if (RB_TYPE_P(options, T_HASH)) {
+    if (get_hash_value(options,"tileable") == Qtrue)
+      flags |= Gosu::IF_TILEABLE;
+    if (get_hash_value(options,"retro") == Qtrue)
+      flags |= Gosu::IF_RETRO;
+    if (get_hash_value(options,"flip_h") == Qtrue)
+      Gosu::enable_flip_h(true);
+    if (get_hash_value(options,"flip_y") == Qtrue)
+      Gosu::enable_flip_y(true);
+    if (get_hash_value(options, "invert") == Qtrue) {
+      normal_color = 0;
+      std::string fn = StringValueCStr(source);
+      Gosu::load_image_inverse_color(bmp, fn);
+    }
+    VALUE ary = get_hash_value(options,"rect");
+    if (RB_TYPE_P(ary, T_ARRAY)) {
+      if (rb_array_len(ary) != 4)
+        rb_raise(rb_eArgError, "Argument passed to :rect must be a four-element "
+                               "Array [x, y, width, height]");
+      src_x      = NUM2INT(rb_ary_entry(ary, 0));
+      src_y      = NUM2INT(rb_ary_entry(ary, 1));
+      src_width  = NUM2INT(rb_ary_entry(ary, 2));
+      src_height = NUM2INT(rb_ary_entry(ary, 3));
+    }
+    if (normal_color) Gosu::load_bitmap(bmp, source);
+    src_width = bmp.width();
+    src_height = bmp.height();
+  }
+  return new Gosu::Image(bmp, src_x, src_y, src_width, src_height, flags);
+}
+
+SWIGINTERN void Gosu_Image_draw_as_quad(Gosu::Image *self, double x1, double y1,
+  Gosu::Color c1, double x2, double y2, Gosu::Color c2, double x3, double y3,
+  Gosu::Color c3, double x4, double y4, Gosu::Color c4, Gosu::ZPos z, Gosu::AlphaMode mode=Gosu::AM_DEFAULT) {
+  self->data().draw(x1, y1, c1, x2, y2, c2, x3, y3, c3, x4, y4, c4, z, mode);
+}
+
+SWIGINTERN Gosu::GLTexInfo *Gosu_Image_gl_tex_info(Gosu::Image const *self) {
+  const Gosu::GLTexInfo* info = self->data().gl_tex_info();
+  return info ? new Gosu::GLTexInfo(*info) : nullptr;
+}
+
+SWIGINTERN Gosu::Image *Gosu_Image_subimage(Gosu::Image *self,int x,int y,int w,int h) {
+  std::unique_ptr<Gosu::ImageData> image_data = self->data().subimage(x, y, w, h);
+  return image_data.get() ? new Gosu::Image(std::move(image_data)) : nullptr;
+}
+
+SWIGINTERN Gosu::Image *Gosu_Image_from_text(std::string const &markup, double font_height, VALUE options=0) {
+  std::string font = Gosu::default_font_name();
+  int width = -1;
+  double spacing = 0;
+  Gosu::Alignment align = Gosu::AL_LEFT;
+  unsigned image_flags = 0;
+  unsigned font_flags = 0;
+  Gosu::enable_flip_h_y(false, false);
+  if (options) {
+    Check_Type(options, T_HASH);
+    VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
+    int keys_size = rb_array_len(keys);
+    for (int i = 0; i < keys_size; ++i) {
+      VALUE key = rb_ary_entry(keys, i);
+      const char* key_string = Gosu::cstr_from_symbol(key);
+      VALUE value = rb_hash_aref(options, key);
+      if (!strcmp(key_string, "font")) {
+        font = StringValuePtr(value);
+      } else if (!strcmp(key_string, "bold")) {
+        if (value == Qtrue) font_flags |= Gosu::FF_BOLD;
+      } else if (!strcmp(key_string, "italic")) {
+        if (value == Qtrue) font_flags |= Gosu::FF_ITALIC;
+      } else if (!strcmp(key_string, "underline")) {
+        if (value == Qtrue) font_flags |= Gosu::FF_UNDERLINE;
+      } else if (!strcmp(key_string, "align")) {
+        const char* cstr = Gosu::cstr_from_symbol(value);
+        if (!strcmp(cstr, "left"))
+          align = Gosu::AL_LEFT;
+        else if (!strcmp(cstr, "center"))
+          align = Gosu::AL_CENTER;
+        else if (!strcmp(cstr, "right"))
+          align = Gosu::AL_RIGHT;
+        else if (!strcmp(cstr, "justify"))
+          align = Gosu::AL_JUSTIFY;
+        else
+          rb_raise(rb_eArgError, "Argument passed to :align must be a valid text "
+                   "alignment (:left, :center, :right, :justify)");
+      } else if (!strcmp(key_string, "width")) {
+        width = RB_FIX2INT(value);
+      } else if (!strcmp(key_string, "spacing")) {
+        spacing = NUM2DBL(value);
+      } else if (!strcmp(key_string, "retro")) {
+        if (value == Qtrue) image_flags |= Gosu::IF_RETRO;
+      } else if (!strcmp(key_string, "flip_h")) {
+        if (value == Qtrue) Gosu::enable_flip_h(true);
+      } else if (!strcmp(key_string, "flip_y")) {
+        if (value == Qtrue) Gosu::enable_flip_y(true);
+      } else {
+        static bool issued_warning = false;
+        if (!issued_warning) {
+          issued_warning = true;
+          rb_warn("Unknown keyword argument: :%s", key_string);
+        }
+      }
+    }
+  }
+  Gosu::Bitmap bitmap = Gosu::layout_markup(markup, font, font_height, spacing, width, align, font_flags);
+  return new Gosu::Image(bitmap, image_flags);
+}
+
+SWIGINTERN int SWIG_AsVal_bool(VALUE obj, bool *val) {
   if (obj == Qtrue) {
     if (val) *val = true;
     return SWIG_OK;
@@ -3031,102 +2899,139 @@ SWIG_AsVal_bool (VALUE obj, bool *val)
     return SWIG_OK;
   } else {
     int res = 0;
-    if (SWIG_AsVal_int (obj, &res) == SWIG_OK) {    
+    if (SWIG_AsVal_int (obj, &res) == SWIG_OK) {
       if (val) *val = res ? true : false;
       return SWIG_OK;
     }
-  }  
+  }
   return SWIG_TypeError;
 }
 
-SWIGINTERN std::vector< Gosu::Image > Gosu_Image_load_tiles__SWIG_1(Gosu::Window &window,VALUE source,int tile_width,int tile_height,bool tileable){
-        Gosu::Bitmap bmp;
-        Gosu::load_bitmap(bmp, source);
-        
-        return Gosu::load_tiles(bmp, tile_width, tile_height,
-            tileable ? Gosu::IF_TILEABLE : Gosu::IF_SMOOTH);
+SWIGINTERN std::vector< Gosu::Image > Gosu_Image_load_tiles__SWIG_0(VALUE source,int tile_width,int tile_height,VALUE options=0){
+  Gosu::Bitmap bmp;
+  Gosu::load_bitmap(bmp, source);
+  unsigned flags = 0;
+  if (options) {
+    Check_Type(options, T_HASH);
+    VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
+    int keys_size = rb_array_len(keys);
+    for (int i = 0; i < keys_size; ++i) {
+      VALUE key = rb_ary_entry(keys, i);
+      const char* key_string = Gosu::cstr_from_symbol(key);
+      VALUE value = rb_hash_aref(options, key);
+      if (!strcmp(key_string, "tileable"))
+        if (RTEST(value)) flags |= Gosu::IF_TILEABLE;
+      else if (!strcmp(key_string, "retro"))
+        if (RTEST(value)) flags |= Gosu::IF_RETRO;
+      else {
+        static bool issued_warning = false;
+        if (!issued_warning) {
+          issued_warning = true;
+          rb_warn("Unknown keyword argument: :%s", key_string);
+        }
+      }
     }
-SWIGINTERN VALUE Gosu_Image_to_blob(Gosu::Image const *self){
-        Gosu::Bitmap bmp = self->data().to_bitmap();
-        auto size = bmp.width() * bmp.height() * sizeof(Gosu::Color);
-        return rb_str_new(reinterpret_cast<const char*>(bmp.data()), size);
-    }
-SWIGINTERN unsigned int Gosu_Image_columns(Gosu::Image const *self){
-        return self->width();
-    }
-SWIGINTERN unsigned int Gosu_Image_rows(Gosu::Image const *self){
-        return self->height();
-    }
-SWIGINTERN void Gosu_Image_save(Gosu::Image const *self,std::string const &filename){
-        Gosu::save_image_file(self->data().to_bitmap(), filename);
-    }
-SWIGINTERN void Gosu_Image_insert(Gosu::Image *self,VALUE source,int x,int y){
-        Gosu::Bitmap bmp;
-        Gosu::load_bitmap(bmp, source);
-        self->data().insert(bmp, x, y);
-    }
-SWIGINTERN std::string Gosu_Image_inspect(Gosu::Image const *self,int max_width=80){
-        try {
-            Gosu::Bitmap bmp = self->data().to_bitmap();
-            // This is the scaled image width inside the ASCII art border, so make sure
-            // there will be room for a leading and trailing '#' character.
-            int w = Gosu::clamp<int>(max_width - 2, 0, bmp.width());
-            // For images with width == 0, the output will have one line per pixel.
-            // Otherwise, scale proportionally.
-            int h = (w ? bmp.height() * w / bmp.width() : bmp.height());
-            
-            // This is the length of one row in the string output, including the border
-            // and a trailing newline.
-            int stride = w + 3;
-            std::string str(stride * (h + 2), '#');
-            str[stride - 1] = '\n'; // first newline
-            str.back()      = '\n'; // last newline
+  }
+  return Gosu::load_tiles(bmp, tile_width, tile_height, flags);
+}
 
-            for (int y = 0; y < h; ++y) {
-                for (int x = 0; x < w; ++x) {
-                    int scaled_x = x * bmp.width()  / w;
-                    int scaled_y = y * bmp.height() / h;
-                    int alpha3bit = bmp.get_pixel(scaled_x, scaled_y).alpha() / 32;
-                    str[(y + 1) * stride + (x + 1)] = " .:ioVM@"[alpha3bit];
-                }
-                str[(y + 1) * stride + (w + 2)] = '\n'; // newline after row of pixels
-            }
-            return str;
-        }
-        catch (...) {
-            return "<Gosu::Image without bitmap representation>";
-        }
+SWIGINTERN std::vector< Gosu::Image > Gosu_Image_load_tiles__SWIG_1(Gosu::Window &window,
+    VALUE source, int tile_width, int tile_height, bool tileable){
+  Gosu::Bitmap bmp;
+  Gosu::load_bitmap(bmp, source);
+  return Gosu::load_tiles(bmp, tile_width, tile_height, tileable ? Gosu::IF_TILEABLE : Gosu::IF_SMOOTH);
+}
+
+SWIGINTERN VALUE Gosu_Image_to_blob(Gosu::Image const *self){
+  Gosu::Bitmap bmp = self->data().to_bitmap();
+  auto size = bmp.width() * bmp.height() * sizeof(Gosu::Color);
+  return rb_str_new(reinterpret_cast<const char*>(bmp.data()), size);
+}
+
+SWIGINTERN unsigned int Gosu_Image_columns(Gosu::Image const *self){
+  return self->width();
+}
+
+SWIGINTERN unsigned int Gosu_Image_rows(Gosu::Image const *self){
+  return self->height();
+}
+
+SWIGINTERN void Gosu_Image_save(Gosu::Image const *self,std::string const &filename) {
+  Gosu::save_image_file(self->data().to_bitmap(), filename);
+}
+
+SWIGINTERN void Gosu_Image_insert(Gosu::Image *self, VALUE source, int x, int y) {
+  Gosu::Bitmap bmp;
+  Gosu::load_bitmap(bmp, source);
+  self->data().insert(bmp, x, y);
+}
+
+SWIGINTERN std::string Gosu_Image_inspect(Gosu::Image const *self, int max_width=80) {
+  try {
+    Gosu::Bitmap bmp = self->data().to_bitmap();
+    // This is the scaled image width inside the ASCII art border, so make sure
+    // there will be room for a leading and trailing '#' character.
+    int w = Gosu::clamp<int>(max_width - 2, 0, bmp.width());
+    // For images with width == 0, the output will have one line per pixel.
+    // Otherwise, scale proportionally.
+    int h = (w ? bmp.height() * w / bmp.width() : bmp.height());
+    // This is the length of one row in the string output, including the border
+    // and a trailing newline.
+    int stride = w + 3;
+    std::string str(stride * (h + 2), '#');
+    str[stride - 1] = '\n'; // first newline
+    str.back()      = '\n'; // last newline
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        int scaled_x = x * bmp.width()  / w;
+        int scaled_y = y * bmp.height() / h;
+        int alpha3bit = bmp.get_pixel(scaled_x, scaled_y).alpha() / 32;
+        str[(y + 1) * stride + (x + 1)] = " .:ioVM@"[alpha3bit];
+      }
+      str[(y + 1) * stride + (w + 2)] = '\n'; // newline after row of pixels
     }
+    return str;
+  } catch (...) {
+    return "<Gosu::Image without bitmap representation>";
+  }
+}
+
 SWIGINTERN VALUE Gosu_TextInput_caret_pos(Gosu::TextInput *self){
-        std::string prefix = self->text().substr(0, self->caret_pos());
-        VALUE rb_prefix = rb_str_new2(prefix.c_str());
-        ENFORCE_UTF8(rb_prefix);
-        return rb_funcall(rb_prefix, rb_intern("length"), 0);
-    }
-SWIGINTERN void Gosu_TextInput_set_caret_pos(Gosu::TextInput *self,VALUE caret_pos){
-        VALUE rb_text = rb_str_new2(self->text().c_str());
-        VALUE rb_prefix = rb_funcall(rb_text, rb_intern("slice"), 2, LONG2NUM(0), caret_pos);
-        std::string prefix = StringValueCStr(rb_prefix);
-        self->set_caret_pos(std::min(prefix.length(), self->text().length()));
-    }
+  std::string prefix = self->text().substr(0, self->caret_pos());
+  VALUE rb_prefix = rb_str_new2(prefix.c_str());
+  ENFORCE_UTF8(rb_prefix);
+  return rb_funcall(rb_prefix, rb_intern("length"), 0);
+}
+
+SWIGINTERN void Gosu_TextInput_set_caret_pos(Gosu::TextInput *self, VALUE caret_pos){
+  VALUE rb_text = rb_str_new2(self->text().c_str());
+  VALUE rb_prefix = rb_funcall(rb_text, rb_intern("slice"), 2, LONG2NUM(0), caret_pos);
+  std::string prefix = StringValueCStr(rb_prefix);
+  self->set_caret_pos(std::min(prefix.length(), self->text().length()));
+}
+
 SWIGINTERN VALUE Gosu_TextInput_selection_start(Gosu::TextInput *self){
-        std::string prefix = self->text().substr(0, self->selection_start());
-        VALUE rb_prefix = rb_str_new2(prefix.c_str());
-        ENFORCE_UTF8(rb_prefix);
-        return rb_funcall(rb_prefix, rb_intern("length"), 0);
-    }
-SWIGINTERN void Gosu_TextInput_set_selection_start(Gosu::TextInput *self,VALUE selection_start){
-        VALUE rb_text = rb_str_new2(self->text().c_str());
-        VALUE rb_prefix = rb_funcall(rb_text, rb_intern("slice"), 2, LONG2NUM(0), selection_start);
-        std::string prefix = StringValueCStr(rb_prefix);
-        self->set_selection_start(std::min(prefix.length(), self->text().length()));
-    }
+  std::string prefix = self->text().substr(0, self->selection_start());
+  VALUE rb_prefix = rb_str_new2(prefix.c_str());
+  ENFORCE_UTF8(rb_prefix);
+  return rb_funcall(rb_prefix, rb_intern("length"), 0);
+}
+
+SWIGINTERN void Gosu_TextInput_set_selection_start(Gosu::TextInput *self, VALUE selection_start){
+  VALUE rb_text = rb_str_new2(self->text().c_str());
+  VALUE rb_prefix = rb_funcall(rb_text, rb_intern("slice"), 2, LONG2NUM(0), selection_start);
+  std::string prefix = StringValueCStr(rb_prefix);
+  self->set_selection_start(std::min(prefix.length(), self->text().length()));
+}
+
 SWIGINTERN void Gosu_Window_set_width(Gosu::Window *self,unsigned int width){
-        self->resize(width, self->height(), self->fullscreen());
-    }
+  self->resize(width, self->height(), self->fullscreen());
+}
+
 SWIGINTERN void Gosu_Window_set_height(Gosu::Window *self,unsigned int height){
-        self->resize(self->width(), height, self->fullscreen());
-    }
+  self->resize(self->width(), height, self->fullscreen());
+}
+
 SWIGINTERN void Gosu_Window_set_fullscreen(Gosu::Window *self, bool fullscreen){
   self->resize(self->width(), self->height(), fullscreen);
 }
@@ -3778,55 +3683,33 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_enable_undocumented_retrofication(int argc, VALUE *argv, VALUE self) {
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  {
-    try {
-      Gosu::enable_undocumented_retrofication();
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+SWIGINTERN VALUE _wrap_enable_undocumented_retrofication(VALUE self) {
+  try {
+    Gosu::enable_undocumented_retrofication();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   return Qnil;
 fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap__release_all_openal_resources(int argc, VALUE *argv, VALUE self) {
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  {
-    try {
-      Gosu::al_shutdown();
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+SWIGINTERN VALUE _wrap__release_all_openal_resources(VALUE self) {
+  try {
+    Gosu::al_shutdown();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   return Qnil;
 fail:
   return Qnil;
 }
-
 
 static swig_class SwigClassColor;
 
-SWIGINTERN VALUE
-_wrap_new_Color__SWIG_0(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_new_Color__SWIG_0(VALUE self) {
   const char *classname SWIGUNUSED = "Gosu::Color";
-  Gosu::Color *result = 0 ;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
+  Gosu::Color *result = 0;
   {
     try {
       result = (Gosu::Color *)new Gosu::Color();
@@ -3842,22 +3725,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_new_Color__SWIG_1(int argc, VALUE *argv, VALUE self) {
-  unsigned int arg1 ;
-  unsigned int val1 ;
-  int ecode1 = 0 ;
+SWIGINTERN VALUE _wrap_new_Color__SWIG_1(VALUE self, VALUE c) {
+  unsigned int arg1;
+  unsigned int val1;
+  int ecode1 = 0;
   const char *classname SWIGUNUSED = "Gosu::Color";
-  Gosu::Color *result = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
-  ecode1 = SWIG_AsVal_unsigned_SS_int(argv[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), Ruby_Format_TypeError( "", "unsigned int","Color", 1, argv[0] ));
-  } 
+  Gosu::Color *result = 0;
+  ecode1 = SWIG_AsVal_unsigned_SS_int(c, &val1);
+  if (!SWIG_IsOK(ecode1))
+    SWIG_exception_fail(SWIG_ArgError(ecode1), Ruby_Format_TypeError("", "unsigned int", "Color", 1, c));
   arg1 = static_cast< unsigned int >(val1);
   {
     try {
@@ -3874,30 +3750,24 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_new_Color__SWIG_2(int argc, VALUE *argv, VALUE self) {
-  Gosu::Color::Channel arg1 ;
-  Gosu::Color::Channel arg2 ;
-  Gosu::Color::Channel arg3 ;
+SWIGINTERN VALUE _wrap_new_Color__SWIG_2(VALUE self, VALUE r, VALUE g, VALUE b) {
+  Gosu::Color::Channel arg1;
+  Gosu::Color::Channel arg2;
+  Gosu::Color::Channel arg3;
   const char *classname SWIGUNUSED = "Gosu::Color";
-  Gosu::Color *result = 0 ;
-  
-  if ((argc < 3) || (argc > 3)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 3)",argc); SWIG_fail;
+  Gosu::Color *result = 0;
+  {
+    arg1 = Gosu::clamp<int>(NUM2ULONG(r), 0, 255);
   }
   {
-    arg1 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(g), 0, 255);
   }
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[1]), 0, 255);
-  }
-  {
-    arg3 = Gosu::clamp<int>(NUM2ULONG(argv[2]), 0, 255);
+    arg3 = Gosu::clamp<int>(NUM2ULONG(b), 0, 255);
   }
   {
     try {
-      result = (Gosu::Color *)new Gosu::Color(arg1,arg2,arg3);
+      result = (Gosu::Color *)new Gosu::Color(arg1, arg2, arg3);
       DATA_PTR(self) = result;
       SWIG_RubyAddTracking(result, self);
     }
@@ -3909,7 +3779,6 @@ _wrap_new_Color__SWIG_2(int argc, VALUE *argv, VALUE self) {
 fail:
   return Qnil;
 }
-
 
 SWIGINTERN VALUE
 #ifdef HAVE_RB_DEFINE_ALLOC_FUNC
@@ -3925,16 +3794,13 @@ _wrap_Color_allocate(int argc, VALUE *argv, VALUE self)
   return vresult;
 }
 
-
-SWIGINTERN VALUE
-_wrap_new_Color__SWIG_3(int argc, VALUE *argv, VALUE self) {
-  Gosu::Color::Channel arg1 ;
-  Gosu::Color::Channel arg2 ;
-  Gosu::Color::Channel arg3 ;
-  Gosu::Color::Channel arg4 ;
+SWIGINTERN VALUE _wrap_new_Color__SWIG_3(int argc, VALUE *argv, VALUE self) {
+  Gosu::Color::Channel arg1;
+  Gosu::Color::Channel arg2;
+  Gosu::Color::Channel arg3;
+  Gosu::Color::Channel arg4;
   const char *classname SWIGUNUSED = "Gosu::Color";
-  Gosu::Color *result = 0 ;
-  
+  Gosu::Color *result = 0;
   if ((argc < 4) || (argc > 4)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 4)",argc); SWIG_fail;
   }
@@ -3952,7 +3818,7 @@ _wrap_new_Color__SWIG_3(int argc, VALUE *argv, VALUE self) {
   }
   {
     try {
-      result = (Gosu::Color *)new Gosu::Color(arg1,arg2,arg3,arg4);
+      result = (Gosu::Color *)new Gosu::Color(arg1, arg2, arg3, arg4);
       DATA_PTR(self) = result;
       SWIG_RubyAddTracking(result, self);
     }
@@ -3965,29 +3831,23 @@ fail:
   return Qnil;
 }
 
-
 SWIGINTERN VALUE _wrap_new_Color(int nargs, VALUE *args, VALUE self) {
   int argc;
   VALUE argv[4];
   int ii;
-  
   argc = nargs;
   if (argc > 4) SWIG_fail;
   for (ii = 0; (ii < argc); ++ii) {
     argv[ii] = args[ii];
   }
-  if (argc == 0) {
-    return _wrap_new_Color__SWIG_0(nargs, args, self);
-  }
+  if (argc == 0) return _wrap_new_Color__SWIG_0(self);
   if (argc == 1) {
     int _v;
     {
       int res = SWIG_AsVal_unsigned_SS_int(argv[0], NULL);
       _v = SWIG_CheckState(res);
     }
-    if (_v) {
-      return _wrap_new_Color__SWIG_1(nargs, args, self);
-    }
+    if (_v) return _wrap_new_Color__SWIG_1(self, argv[0]);
   }
   if (argc == 3) {
     int _v;
@@ -4002,9 +3862,7 @@ SWIGINTERN VALUE _wrap_new_Color(int nargs, VALUE *args, VALUE self) {
         {
           _v = !!rb_respond_to(argv[2], rb_intern("to_i"));
         }
-        if (_v) {
-          return _wrap_new_Color__SWIG_2(nargs, args, self);
-        }
+        if (_v) return _wrap_new_Color__SWIG_2(self, args[0], args[1], args[2]);
       }
     }
   }
@@ -4025,27 +3883,21 @@ SWIGINTERN VALUE _wrap_new_Color(int nargs, VALUE *args, VALUE self) {
           {
             _v = !!rb_respond_to(argv[3], rb_intern("to_i"));
           }
-          if (_v) {
-            return _wrap_new_Color__SWIG_3(nargs, args, self);
-          }
+          if (_v) return _wrap_new_Color__SWIG_3(nargs, args, self);
         }
       }
     }
   }
-  
 fail:
   Ruby_Format_OverloadedError( argc, 4, "Color.new", 
     "    Color.new()\n"
     "    Color.new(unsigned int argb)\n"
     "    Color.new(Gosu::Color::Channel red, Gosu::Color::Channel green, Gosu::Color::Channel blue)\n"
     "    Color.new(Gosu::Color::Channel alpha, Gosu::Color::Channel red, Gosu::Color::Channel green, Gosu::Color::Channel blue)\n");
-  
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_from_hsv(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_from_hsv(int argc, VALUE *argv, VALUE self) {
   double arg1 ;
   double arg2 ;
   double arg3 ;
@@ -4057,28 +3909,24 @@ _wrap_Color_from_hsv(int argc, VALUE *argv, VALUE self) {
   int ecode3 = 0 ;
   Gosu::Color result;
   VALUE vresult = Qnil;
-  
   if ((argc < 3) || (argc > 3)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 3)",argc); SWIG_fail;
   }
   ecode1 = SWIG_AsVal_double(argv[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), Ruby_Format_TypeError( "", "double","Gosu::Color::from_hsv", 1, argv[0] ));
-  } 
+  if (!SWIG_IsOK(ecode1))
+    SWIG_exception_fail(SWIG_ArgError(ecode1), Ruby_Format_TypeError( "", "double","Gosu::Color::from_hsv", 1, argv[0]));
   arg1 = static_cast< double >(val1);
   ecode2 = SWIG_AsVal_double(argv[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","Gosu::Color::from_hsv", 2, argv[1] ));
-  } 
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","Gosu::Color::from_hsv", 2, argv[1]));
   arg2 = static_cast< double >(val2);
   ecode3 = SWIG_AsVal_double(argv[2], &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "double","Gosu::Color::from_hsv", 3, argv[2] ));
-  } 
+  if (!SWIG_IsOK(ecode3))
+    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "double","Gosu::Color::from_hsv", 3, argv[2]));
   arg3 = static_cast< double >(val3);
   {
     try {
-      result = Gosu::Color::from_hsv(arg1,arg2,arg3);
+      result = Gosu::Color::from_hsv(arg1, arg2, arg3);
     }
     catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
@@ -4090,9 +3938,7 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_from_ahsv(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_from_ahsv(int argc, VALUE *argv, VALUE self) {
   Gosu::Color::Channel arg1 ;
   double arg2 ;
   double arg3 ;
@@ -4142,27 +3988,20 @@ fail:
 }
 
 
-SWIGINTERN VALUE
-_wrap_Color_red(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_red(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   Gosu::Color::Channel result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","red", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "red", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
       result = ((Gosu::Color const *)arg1)->red();
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -4172,28 +4011,20 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_green(int argc, VALUE *argv, VALUE self) {
-  Gosu::Color *arg1 = (Gosu::Color *) 0 ;
+SWIGINTERN VALUE _wrap_Color_green(VALUE self) {
+  Gosu::Color *arg1 = (Gosu::Color *) 0;
   void *argp1 = 0 ;
   int res1 = 0 ;
   Gosu::Color::Channel result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","green", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "green", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
       result = ((Gosu::Color const *)arg1)->green();
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -4203,21 +4034,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_blue(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_blue(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   Gosu::Color::Channel result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","blue", 1, self )); 
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","blue", 1, self ));
   }
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
@@ -4234,22 +4059,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_alpha(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_alpha(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   Gosu::Color::Channel result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","alpha", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","alpha", 1, self ));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -4265,24 +4083,17 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_rede___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_rede___(VALUE self, VALUE nr) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   Gosu::Color::Channel arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_red", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_red", 1, self ));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(nr), 0, 255);
   }
   {
     try {
@@ -4298,23 +4109,17 @@ fail:
 }
 
 
-SWIGINTERN VALUE
-_wrap_Color_greene___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_greene___(VALUE self, VALUE ng) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   Gosu::Color::Channel arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_green", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_green", 1, self ));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(ng), 0, 255);
   }
   {
     try {
@@ -4329,24 +4134,17 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_bluee___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_bluee___(VALUE self, VALUE nb) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   Gosu::Color::Channel arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_blue", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "blue=", 1, self ));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(nb), 0, 255);
   }
   {
     try {
@@ -4361,24 +4159,17 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_alphae___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_alphae___(VALUE self, VALUE na) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   Gosu::Color::Channel arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_alpha", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "alpha=", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(na), 0, 255);
   }
   {
     try {
@@ -4393,22 +4184,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_hue(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_hue(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   double result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","hue", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "hue", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -4424,28 +4208,20 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_huee___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_huee___(VALUE self, VALUE nh) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   double arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   double val2 ;
   int ecode2 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_hue", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "hue=", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
-  ecode2 = SWIG_AsVal_double(argv[0], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","set_hue", 2, argv[0] ));
-  } 
+  ecode2 = SWIG_AsVal_double(nh, &val2);
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "Float", "hue=", 2, nh));
   arg2 = static_cast< double >(val2);
   {
     try {
@@ -4460,22 +4236,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_saturation(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_saturation(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   double result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","saturation", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "saturation", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -4491,28 +4260,20 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_saturatione___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_saturatione___(VALUE self, VALUE ns) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   double arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   double val2 ;
   int ecode2 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_saturation", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "saturation=", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
-  ecode2 = SWIG_AsVal_double(argv[0], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","set_saturation", 2, argv[0] ));
-  } 
+  ecode2 = SWIG_AsVal_double(ns, &val2);
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "Float", "saturation=", 2, ns));
   arg2 = static_cast< double >(val2);
   {
     try {
@@ -4527,22 +4288,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_value(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_value(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   double result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","value", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "value", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -4558,34 +4312,26 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_valuee___(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_valuee___(VALUE self, VALUE nv) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   double arg2 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   double val2 ;
   int ecode2 = 0 ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color *","set_value", 1, self )); 
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "value=", 1, self ));
   }
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
-  ecode2 = SWIG_AsVal_double(argv[0], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","set_value", 2, argv[0] ));
-  } 
+  ecode2 = SWIG_AsVal_double(nv, &val2);
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "Float", "value=", 2, nv));
   arg2 = static_cast< double >(val2);
   {
     try {
       (arg1)->set_value(arg2);
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -4594,28 +4340,59 @@ fail:
   return Qnil;
 }
 
+SWIGINTERN VALUE _wrap_Color_invert( VALUE self) {
+  Gosu::Color *arg1 = (Gosu::Color *) 0;
+  Gosu::Color result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  VALUE vresult = Qnil;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 | 0);
+  arg1 = reinterpret_cast<Gosu::Color*>(argp1);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "invert", 1, self));
+  try {
+    result = (arg1)->invert();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  vresult = SWIG_NewPointerObj((new Gosu::Color(static_cast< const Gosu::Color& >(result))), SWIGTYPE_p_Gosu__Color, SWIG_POINTER_OWN | 0);
+  return vresult;
+fail:
+  return Qnil;
+}
 
-SWIGINTERN VALUE
-_wrap_Color_argb__SWIG_0(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_invert_destructive( VALUE self) {
+  Gosu::Color *arg1 = (Gosu::Color *) 0;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 | 0);
+  arg1 = reinterpret_cast<Gosu::Color*>(argp1);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "invert!", 1, self));
+  try {
+    ((Gosu::Color*)arg1)->inverted();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what()); //}
+  }
+  return self;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Color_argb__SWIG_0(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   std::uint32_t result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","argb", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "argb", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
       result = ((Gosu::Color const *)arg1)->argb();
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -4625,28 +4402,21 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_bgr(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_bgr(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   std::uint32_t result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","bgr", 1, self )); 
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "bgr", 1, self ));
   }
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
       result = ((Gosu::Color const *)arg1)->bgr();
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -4656,22 +4426,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_abgr(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_abgr(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   std::uint32_t result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","abgr", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "abgr", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -4687,22 +4450,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_gl(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_gl(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   std::uint32_t result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","gl", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "gl", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -4718,30 +4474,24 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_rgb(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_rgb(VALUE self, VALUE r, VALUE g, VALUE b) {
   Gosu::Color::Channel arg1 ;
   Gosu::Color::Channel arg2 ;
   Gosu::Color::Channel arg3 ;
   Gosu::Color result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 3) || (argc > 3)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 3)",argc); SWIG_fail;
+  {
+    arg1 = Gosu::clamp<int>(NUM2ULONG(r), 0, 255);
   }
   {
-    arg1 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(g), 0, 255);
   }
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[1]), 0, 255);
-  }
-  {
-    arg3 = Gosu::clamp<int>(NUM2ULONG(argv[2]), 0, 255);
+    arg3 = Gosu::clamp<int>(NUM2ULONG(b), 0, 255);
   }
   {
     try {
-      result = Gosu_Color_rgb(arg1,arg2,arg3);
+      result = Gosu_Color_rgb(arg1, arg2, arg3);
     }
     catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
@@ -4753,34 +4503,28 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_rgba__SWIG_0(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_rgba__SWIG_0(VALUE self, VALUE r, VALUE g, VALUE b, VALUE a) {
   Gosu::Color::Channel arg1 ;
   Gosu::Color::Channel arg2 ;
   Gosu::Color::Channel arg3 ;
   Gosu::Color::Channel arg4 ;
   Gosu::Color result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 4) || (argc > 4)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 4)",argc); SWIG_fail;
+  {
+    arg1 = Gosu::clamp<int>(NUM2ULONG(r), 0, 255);
   }
   {
-    arg1 = Gosu::clamp<int>(NUM2ULONG(argv[0]), 0, 255);
+    arg2 = Gosu::clamp<int>(NUM2ULONG(g), 0, 255);
   }
   {
-    arg2 = Gosu::clamp<int>(NUM2ULONG(argv[1]), 0, 255);
+    arg3 = Gosu::clamp<int>(NUM2ULONG(b), 0, 255);
   }
   {
-    arg3 = Gosu::clamp<int>(NUM2ULONG(argv[2]), 0, 255);
-  }
-  {
-    arg4 = Gosu::clamp<int>(NUM2ULONG(argv[3]), 0, 255);
+    arg4 = Gosu::clamp<int>(NUM2ULONG(a), 0, 255);
   }
   {
     try {
-      result = Gosu_Color_rgba__SWIG_0(arg1,arg2,arg3,arg4);
+      result = Gosu_Color_rgba__SWIG_0(arg1, arg2, arg3, arg4);
     }
     catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
@@ -4792,22 +4536,15 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Color_rgba__SWIG_1(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_rgba__SWIG_1(VALUE self, VALUE rgba) {
   std::uint32_t arg1 ;
   unsigned long val1 ;
   int ecode1 = 0 ;
   Gosu::Color result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
-  ecode1 = SWIG_AsVal_unsigned_SS_long(argv[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), Ruby_Format_TypeError( "", "std::uint32_t","Gosu_Color_rgba__SWIG_1", 1, argv[0] ));
-  } 
+  ecode1 = SWIG_AsVal_unsigned_SS_long(rgba, &val1);
+  if (!SWIG_IsOK(ecode1))
+    SWIG_exception_fail(SWIG_ArgError(ecode1), Ruby_Format_TypeError("", "std::uint32_t", "Gosu_Color_rgba__SWIG_1", 1, rgba));
   arg1 = static_cast< std::uint32_t >(val1);
   {
     try {
@@ -4817,19 +4554,15 @@ _wrap_Color_rgba__SWIG_1(int argc, VALUE *argv, VALUE self) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
-  vresult = SWIG_NewPointerObj((new Gosu::Color(static_cast< const Gosu::Color& >(result))), SWIGTYPE_p_Gosu__Color, SWIG_POINTER_OWN |  0 );
+  vresult = SWIG_NewPointerObj((new Gosu::Color(static_cast< const Gosu::Color& >(result))), SWIGTYPE_p_Gosu__Color, SWIG_POINTER_OWN | 0);
   return vresult;
 fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE _wrap_Color_rgba(int nargs, VALUE *args, VALUE self) {
-  int argc;
+SWIGINTERN VALUE _wrap_Color_rgba(int argc, VALUE *args, VALUE self) {
   VALUE argv[4];
   int ii;
-  
-  argc = nargs;
   if (argc > 4) SWIG_fail;
   for (ii = 0; (ii < argc); ++ii) {
     argv[ii] = args[ii];
@@ -4841,7 +4574,7 @@ SWIGINTERN VALUE _wrap_Color_rgba(int nargs, VALUE *args, VALUE self) {
       _v = SWIG_CheckState(res);
     }
     if (_v) {
-      return _wrap_Color_rgba__SWIG_1(nargs, args, self);
+      return _wrap_Color_rgba__SWIG_1(self, argv[0]);
     }
   }
   if (argc == 4) {
@@ -4862,24 +4595,21 @@ SWIGINTERN VALUE _wrap_Color_rgba(int nargs, VALUE *args, VALUE self) {
             _v = !!rb_respond_to(argv[3], rb_intern("to_i"));
           }
           if (_v) {
-            return _wrap_Color_rgba__SWIG_0(nargs, args, self);
+            return _wrap_Color_rgba__SWIG_0(self, argv[0], argv[1], argv[2], argv[3]);
           }
         }
       }
     }
   }
-  
 fail:
   Ruby_Format_OverloadedError( argc, 4, "rgba", 
     "    Gosu::Color rgba(Gosu::Color::Channel r, Gosu::Color::Channel g, Gosu::Color::Channel b, Gosu::Color::Channel a)\n"
     "    Gosu::Color rgba(std::uint32_t rgba)\n");
-  
   return Qnil;
 }
 
 
-SWIGINTERN VALUE
-_wrap_Color_argb__SWIG_1(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Color_argb__SWIG_1(int argc, VALUE *argv, VALUE self) {
   Gosu::Color::Channel arg1 ;
   Gosu::Color::Channel arg2 ;
   Gosu::Color::Channel arg3 ;
@@ -4952,7 +4682,6 @@ SWIGINTERN VALUE _wrap_Color_argb(int nargs, VALUE *args, VALUE self) {
   int argc;
   VALUE argv[4];
   int ii;
-  
   argc = nargs;
   if (argc > 4) SWIG_fail;
   for (ii = 0; (ii < argc); ++ii) {
@@ -4963,9 +4692,7 @@ SWIGINTERN VALUE _wrap_Color_argb(int nargs, VALUE *args, VALUE self) {
     void *vptr = 0;
     int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_Gosu__Color, 0);
     _v = SWIG_CheckState(res);
-    if (_v) {
-      return _wrap_Color_argb__SWIG_0(nargs, args, self);
-    }
+    if (_v) return _wrap_Color_argb__SWIG_0(self);
   }
   if (argc == 1) {
     int _v;
@@ -4973,9 +4700,7 @@ SWIGINTERN VALUE _wrap_Color_argb(int nargs, VALUE *args, VALUE self) {
       int res = SWIG_AsVal_unsigned_SS_long(argv[0], NULL);
       _v = SWIG_CheckState(res);
     }
-    if (_v) {
-      return _wrap_Color_argb__SWIG_2(nargs, args, self);
-    }
+    if (_v) return _wrap_Color_argb__SWIG_2(nargs, args, self);
   }
   if (argc == 4) {
     int _v;
@@ -5001,41 +4726,27 @@ SWIGINTERN VALUE _wrap_Color_argb(int nargs, VALUE *args, VALUE self) {
       }
     }
   }
-  
 fail:
   Ruby_Format_OverloadedError( argc, 4, "Color.argb", 
     "    std::uint32_t Color.argb(Gosu::Color const *self)\n"
     "    Gosu::Color Color.argb(Gosu::Color::Channel a, Gosu::Color::Channel r, Gosu::Color::Channel g, Gosu::Color::Channel b)\n"
     "    Gosu::Color Color.argb(std::uint32_t argb)\n");
-  
   return Qnil;
 }
-
-
-
 /*
   Document-method: Gosu::Color.dup
-
   call-seq:
     dup -> Color
-
-Create a duplicate of the class and unfreeze it if needed.
-*/
-SWIGINTERN VALUE
-_wrap_Color_dup(int argc, VALUE *argv, VALUE self) {
+Create a duplicate of the class and unfreeze it if needed. */
+SWIGINTERN VALUE _wrap_Color_dup(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   Gosu::Color result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","dup", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "dup", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -5050,32 +4761,20 @@ _wrap_Color_dup(int argc, VALUE *argv, VALUE self) {
 fail:
   return Qnil;
 }
-
-
-
 /*
   Document-method: Gosu::Color.inspect
-
   call-seq:
     inspect -> std::string
-
-Inspect class and its contents.
-*/
-SWIGINTERN VALUE
-_wrap_Color_inspect(int argc, VALUE *argv, VALUE self) {
+Inspect class and its contents.*/
+SWIGINTERN VALUE _wrap_Color_inspect(VALUE self) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   std::string result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","inspect", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "inspect", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
   {
     try {
@@ -5090,38 +4789,26 @@ _wrap_Color_inspect(int argc, VALUE *argv, VALUE self) {
 fail:
   return Qnil;
 }
-
-
-
 /*
   Document-method: Gosu::Color.==
-
   call-seq:
     ==(other) -> bool
-
-Equality comparison operator.
-*/
-SWIGINTERN VALUE
-_wrap_Color___eq__(int argc, VALUE *argv, VALUE self) {
+Equality comparison operator.*/
+SWIGINTERN VALUE _wrap_Color___eq__(VALUE self, VALUE nc) {
   Gosu::Color *arg1 = (Gosu::Color *) 0 ;
   VALUE arg2 = (VALUE) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   bool result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Color const *","operator ==", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Color, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Color", "==", 1, self));
   arg1 = reinterpret_cast< Gosu::Color * >(argp1);
-  arg2 = argv[0];
+  arg2 = nc;
   {
     try {
-      result = (bool)Gosu_Color_operator_Se__Se_((Gosu::Color const *)arg1,arg2);
+      result = (bool)Gosu_Color_operator_Se__Se_((Gosu::Color const *)arg1, arg2);
     }
     catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
@@ -5133,12 +4820,10 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN void
-free_Gosu_Color(void *self) {
-    Gosu::Color *arg1 = (Gosu::Color *)self;
-    SWIG_RubyRemoveTracking(arg1);
-    delete arg1;
+SWIGINTERN void free_Gosu_Color(void *self) {
+  Gosu::Color *arg1 = (Gosu::Color *)self;
+  SWIG_RubyRemoveTracking(arg1);
+  delete arg1;
 }
 
 static swig_class SwigClassFont;
@@ -5557,8 +5242,7 @@ fail:
 }
 
 
-SWIGINTERN VALUE
-_wrap_new_Font__SWIG_0(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_new_Font__SWIG_0(int argc, VALUE *argv, VALUE self) {
   Gosu::Window *arg1 = 0 ;
   std::string *arg2 = 0 ;
   int arg3 ;
@@ -5568,34 +5252,33 @@ _wrap_new_Font__SWIG_0(int argc, VALUE *argv, VALUE self) {
   int val3 ;
   int ecode3 = 0 ;
   const char *classname SWIGUNUSED = "Gosu::Font";
-  Gosu::Font *result = 0 ;
-  
+  Gosu::Font *result = 0;
   if ((argc < 3) || (argc > 3)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 3)",argc); SWIG_fail;
   }
   res1 = SWIG_ConvertPtr(argv[0], &argp1, SWIGTYPE_p_Gosu__Window,  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window &","Font", 1, argv[0] )); 
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window &","Font", 1, argv[0] ));
   }
   if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "Gosu::Window &","Font", 1, argv[0])); 
+    SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "Gosu::Window &","Font", 1, argv[0]));
   }
   arg1 = reinterpret_cast< Gosu::Window * >(argp1);
   {
     std::string *ptr = (std::string *)0;
     res2 = SWIG_AsPtr_std_string(argv[1], &ptr);
     if (!SWIG_IsOK(res2)) {
-      SWIG_exception_fail(SWIG_ArgError(res2), Ruby_Format_TypeError( "", "std::string const &","Font", 2, argv[1] )); 
+      SWIG_exception_fail(SWIG_ArgError(res2), Ruby_Format_TypeError( "", "std::string const &","Font", 2, argv[1] ));
     }
     if (!ptr) {
-      SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "std::string const &","Font", 2, argv[1])); 
+      SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "std::string const &","Font", 2, argv[1]));
     }
     arg2 = ptr;
   }
   ecode3 = SWIG_AsVal_int(argv[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
     SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "int","Font", 3, argv[2] ));
-  } 
+  }
   arg3 = static_cast< int >(val3);
   {
     try {
@@ -6833,7 +6516,6 @@ _wrap_Image_gl_tex_info(int argc, VALUE *argv, VALUE self) {
   int res1 = 0 ;
   Gosu::GLTexInfo *result = 0 ;
   VALUE vresult = Qnil;
-  
   if ((argc < 0) || (argc > 0)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
   }
@@ -6856,110 +6538,73 @@ fail:
   return Qnil;
 }
 
-
 SWIGINTERN VALUE
-_wrap_Image_subimage(int argc, VALUE *argv, VALUE self) {
-  Gosu::Image *arg1 = (Gosu::Image *) 0 ;
-  int arg2 ;
-  int arg3 ;
-  int arg4 ;
-  int arg5 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  int val4 ;
-  int ecode4 = 0 ;
-  int val5 ;
-  int ecode5 = 0 ;
-  Gosu::Image *result = 0 ;
+_wrap_Image_subimage(VALUE self, VALUE x, VALUE y, VALUE w, VALUE h) {
+  Gosu::Image *arg1 = (Gosu::Image *) 0;
+  int arg2, arg3, arg4, arg5;
+  void *argp1 = 0;
+  int res1 = 0, val2, ecode2 = 0, val3, ecode3 = 0, val4, ecode4 = 0, val5, ecode5 = 0;
+  Gosu::Image *result = 0;
   VALUE vresult = Qnil;
-  
-  if ((argc < 4) || (argc > 4)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 4)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Image, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Image *","subimage", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Image, 0 | 0 );
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Image *", "subimage", 1, self));
   arg1 = reinterpret_cast< Gosu::Image * >(argp1);
-  ecode2 = SWIG_AsVal_int(argv[0], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "int","subimage", 2, argv[0] ));
-  } 
+  ecode2 = SWIG_AsVal_int(x, &val2);
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "int", "subimage", 2, x));
   arg2 = static_cast< int >(val2);
-  ecode3 = SWIG_AsVal_int(argv[1], &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "int","subimage", 3, argv[1] ));
-  } 
+  ecode3 = SWIG_AsVal_int(y, &val3);
+  if (!SWIG_IsOK(ecode3))
+    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError("", "int", "subimage", 3, y));
   arg3 = static_cast< int >(val3);
-  ecode4 = SWIG_AsVal_int(argv[2], &val4);
-  if (!SWIG_IsOK(ecode4)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode4), Ruby_Format_TypeError( "", "int","subimage", 4, argv[2] ));
-  } 
+  ecode4 = SWIG_AsVal_int(w, &val4);
+  if (!SWIG_IsOK(ecode4))
+    SWIG_exception_fail(SWIG_ArgError(ecode4), Ruby_Format_TypeError("", "int", "subimage", 4, w));
   arg4 = static_cast< int >(val4);
-  ecode5 = SWIG_AsVal_int(argv[3], &val5);
-  if (!SWIG_IsOK(ecode5)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode5), Ruby_Format_TypeError( "", "int","subimage", 5, argv[3] ));
-  } 
+  ecode5 = SWIG_AsVal_int(h, &val5);
+  if (!SWIG_IsOK(ecode5))
+    SWIG_exception_fail(SWIG_ArgError(ecode5), Ruby_Format_TypeError("", "int", "subimage", 5, h));
   arg5 = static_cast< int >(val5);
-  {
-    try {
-      result = (Gosu::Image *)Gosu_Image_subimage(arg1,arg2,arg3,arg4,arg5);
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    result = (Gosu::Image *)Gosu_Image_subimage(arg1, arg2, arg3, arg4, arg5);
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
-  vresult = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_Gosu__Image, SWIG_POINTER_OWN |  0 );
+  vresult = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_Gosu__Image, SWIG_POINTER_OWN | 0);
   return vresult;
 fail:
   return Qnil;
 }
-
 
 SWIGINTERN VALUE
 _wrap_Image_from_text(int argc, VALUE *argv, VALUE self) {
-  std::string *arg1 = 0 ;
-  double arg2 ;
-  VALUE arg3 = (VALUE) 0 ;
-  int res1 = SWIG_OLDOBJ ;
-  double val2 ;
-  int ecode2 = 0 ;
-  Gosu::Image *result = 0 ;
+  std::string *arg1 = 0;
+  double arg2;
+  VALUE arg3 = (VALUE) 0;
+  int res1 = SWIG_OLDOBJ;
+  double val2;
+  int ecode2 = 0;
+  Gosu::Image *result = 0;
   VALUE vresult = Qnil;
-  
-  if ((argc < 2) || (argc > 3)) {
+  std::string *ptr = (std::string *)0;
+  if ((argc < 2) || (argc > 3))
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)",argc); SWIG_fail;
-  }
-  {
-    std::string *ptr = (std::string *)0;
-    res1 = SWIG_AsPtr_std_string(argv[0], &ptr);
-    if (!SWIG_IsOK(res1)) {
-      SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "std::string const &","Gosu_Image_from_text", 1, argv[0] )); 
-    }
-    if (!ptr) {
-      SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "std::string const &","Gosu_Image_from_text", 1, argv[0])); 
-    }
-    arg1 = ptr;
-  }
+  res1 = SWIG_AsPtr_std_string(argv[0], &ptr);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "std::string const &","Gosu_Image_from_text", 1, argv[0]));
+  if (!ptr)
+    SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "std::string const &","Gosu_Image_from_text", 1, argv[0]));
+  arg1 = ptr;
   ecode2 = SWIG_AsVal_double(argv[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
+  if (!SWIG_IsOK(ecode2))
     SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "double","Gosu_Image_from_text", 2, argv[1] ));
-  } 
   arg2 = static_cast< double >(val2);
-  if (argc > 2) {
-    arg3 = argv[2];
-  }
-  {
-    try {
-      result = (Gosu::Image *)Gosu_Image_from_text((std::string const &)*arg1,arg2,arg3);
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  if (argc > 2) arg3 = argv[2];
+  try {
+    result = (Gosu::Image *)Gosu_Image_from_text((std::string const &)*arg1,arg2,arg3);
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   vresult = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_Gosu__Image, SWIG_POINTER_OWN |  0 );
   if (SWIG_IsNewObj(res1)) delete arg1;
@@ -6968,7 +6613,6 @@ fail:
   if (SWIG_IsNewObj(res1)) delete arg1;
   return Qnil;
 }
-
 
 SWIGINTERN VALUE
 _wrap_Image_load_tiles__SWIG_0(int argc, VALUE *argv, VALUE self) {
@@ -6982,20 +6626,17 @@ _wrap_Image_load_tiles__SWIG_0(int argc, VALUE *argv, VALUE self) {
   int ecode3 = 0 ;
   SwigValueWrapper< std::vector< Gosu::Image > > result;
   VALUE vresult = Qnil;
-  
   if ((argc < 3) || (argc > 4)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 3)",argc); SWIG_fail;
   }
   arg1 = argv[0];
   ecode2 = SWIG_AsVal_int(argv[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError( "", "int","Gosu_Image_load_tiles__SWIG_0", 2, argv[1] ));
-  } 
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "int", "Gosu_Image_load_tiles__SWIG_0", 2, argv[1]));
   arg2 = static_cast< int >(val2);
   ecode3 = SWIG_AsVal_int(argv[2], &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "int","Gosu_Image_load_tiles__SWIG_0", 3, argv[2] ));
-  } 
+  if (!SWIG_IsOK(ecode3))
+    SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError("", "int", "Gosu_Image_load_tiles__SWIG_0", 3, argv[2]));
   arg3 = static_cast< int >(val3);
   if (argc > 3) {
     arg4 = argv[3];
@@ -7003,8 +6644,7 @@ _wrap_Image_load_tiles__SWIG_0(int argc, VALUE *argv, VALUE self) {
   {
     try {
       result = Gosu_Image_load_tiles__SWIG_0(arg1,arg2,arg3,arg4);
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -7020,7 +6660,6 @@ _wrap_Image_load_tiles__SWIG_0(int argc, VALUE *argv, VALUE self) {
 fail:
   return Qnil;
 }
-
 
 SWIGINTERN VALUE
 _wrap_Image_load_tiles__SWIG_1(int argc, VALUE *argv, VALUE self) {
@@ -7039,39 +6678,37 @@ _wrap_Image_load_tiles__SWIG_1(int argc, VALUE *argv, VALUE self) {
   int ecode5 = 0 ;
   SwigValueWrapper< std::vector< Gosu::Image > > result;
   VALUE vresult = Qnil;
-  
   if ((argc < 5) || (argc > 5)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 5)",argc); SWIG_fail;
   }
   res1 = SWIG_ConvertPtr(argv[0], &argp1, SWIGTYPE_p_Gosu__Window,  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window &","Gosu_Image_load_tiles__SWIG_1", 1, argv[0] )); 
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window &","Gosu_Image_load_tiles__SWIG_1", 1, argv[0] ));
   }
   if (!argp1) {
-    SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "Gosu::Window &","Gosu_Image_load_tiles__SWIG_1", 1, argv[0])); 
+    SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "Gosu::Window &","Gosu_Image_load_tiles__SWIG_1", 1, argv[0]));
   }
   arg1 = reinterpret_cast< Gosu::Window * >(argp1);
   arg2 = argv[1];
   ecode3 = SWIG_AsVal_int(argv[2], &val3);
   if (!SWIG_IsOK(ecode3)) {
     SWIG_exception_fail(SWIG_ArgError(ecode3), Ruby_Format_TypeError( "", "int","Gosu_Image_load_tiles__SWIG_1", 3, argv[2] ));
-  } 
+  }
   arg3 = static_cast< int >(val3);
   ecode4 = SWIG_AsVal_int(argv[3], &val4);
   if (!SWIG_IsOK(ecode4)) {
     SWIG_exception_fail(SWIG_ArgError(ecode4), Ruby_Format_TypeError( "", "int","Gosu_Image_load_tiles__SWIG_1", 4, argv[3] ));
-  } 
+  }
   arg4 = static_cast< int >(val4);
   ecode5 = SWIG_AsVal_bool(argv[4], &val5);
   if (!SWIG_IsOK(ecode5)) {
     SWIG_exception_fail(SWIG_ArgError(ecode5), Ruby_Format_TypeError( "", "bool","Gosu_Image_load_tiles__SWIG_1", 5, argv[4] ));
-  } 
+  }
   arg5 = static_cast< bool >(val5);
   {
     try {
       result = Gosu_Image_load_tiles__SWIG_1(*arg1,arg2,arg3,arg4,arg5);
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -7088,12 +6725,10 @@ fail:
   return Qnil;
 }
 
-
 SWIGINTERN VALUE _wrap_Image_load_tiles(int nargs, VALUE *args, VALUE self) {
   int argc;
   VALUE argv[5];
   int ii;
-  
   argc = nargs;
   if (argc > 5) SWIG_fail;
   for (ii = 0; (ii < argc); ++ii) {
@@ -7154,15 +6789,12 @@ SWIGINTERN VALUE _wrap_Image_load_tiles(int nargs, VALUE *args, VALUE self) {
       }
     }
   }
-  
 fail:
   Ruby_Format_OverloadedError( argc, 5, "load_tiles", 
     "    std::vector< Gosu::Image > load_tiles(VALUE source, int tile_width, int tile_height, VALUE options)\n"
     "    std::vector< Gosu::Image > load_tiles(Gosu::Window &window, VALUE source, int tile_width, int tile_height, bool tileable)\n");
-  
   return Qnil;
 }
-
 
 SWIGINTERN VALUE
 _wrap_Image_to_blob(int argc, VALUE *argv, VALUE self) {
@@ -7194,30 +6826,21 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Image_columns(int argc, VALUE *argv, VALUE self) {
+SWIGINTERN VALUE _wrap_Image_columns(VALUE self) {
   Gosu::Image *arg1 = (Gosu::Image *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   unsigned int result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Image, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Image const *","columns", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Image const *","columns", 1, self ));
   arg1 = reinterpret_cast< Gosu::Image * >(argp1);
-  {
-    try {
-      result = (unsigned int)Gosu_Image_columns((Gosu::Image const *)arg1);
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    result = (unsigned int)Gosu_Image_columns((Gosu::Image const *)arg1);
+  }
+  catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   vresult = SWIG_From_unsigned_SS_int(static_cast< unsigned int >(result));
   return vresult;
@@ -7225,30 +6848,21 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Image_rows(int argc, VALUE *argv, VALUE self) {
-  Gosu::Image *arg1 = (Gosu::Image *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
+SWIGINTERN VALUE _wrap_Image_rows(int argc, VALUE *argv, VALUE self) {
+  Gosu::Image *arg1 = (Gosu::Image *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
   unsigned int result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Image, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Image const *","rows", 1, self )); 
-  }
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Image const *","rows", 1, self ));
   arg1 = reinterpret_cast< Gosu::Image * >(argp1);
-  {
-    try {
-      result = (unsigned int)Gosu_Image_rows((Gosu::Image const *)arg1);
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    result = (unsigned int)Gosu_Image_rows((Gosu::Image const *)arg1);
+  }
+  catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   vresult = SWIG_From_unsigned_SS_int(static_cast< unsigned int >(result));
   return vresult;
@@ -7256,18 +6870,12 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Image_save(int argc, VALUE *argv, VALUE self) {
-  Gosu::Image *arg1 = (Gosu::Image *) 0 ;
-  std::string *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int res2 = SWIG_OLDOBJ ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
+SWIGINTERN VALUE _wrap_Image_save(int argc, VALUE *argv, VALUE self) {
+  Gosu::Image *arg1 = (Gosu::Image *) 0;
+  std::string *arg2 = 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  int res2 = SWIG_OLDOBJ;
   res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Image, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Image const *","save", 1, self )); 
@@ -7284,13 +6892,10 @@ _wrap_Image_save(int argc, VALUE *argv, VALUE self) {
     }
     arg2 = ptr;
   }
-  {
-    try {
-      Gosu_Image_save((Gosu::Image const *)arg1,(std::string const &)*arg2);
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    Gosu_Image_save((Gosu::Image const *)arg1,(std::string const &)*arg2);
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   if (SWIG_IsNewObj(res2)) delete arg2;
   return Qnil;
@@ -7298,9 +6903,6 @@ fail:
   if (SWIG_IsNewObj(res2)) delete arg2;
   return Qnil;
 }
-
-
-
 /*
   Document-method: Gosu::Image.insert
 
@@ -7801,7 +7403,6 @@ _wrap_Sample_play(int argc, VALUE *argv, VALUE self) {
   int ecode4 = 0 ;
   Gosu::Channel result;
   VALUE vresult = Qnil;
-  
   if ((argc < 0) || (argc > 3)) {
     rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
   }
@@ -8048,6 +7649,126 @@ fail:
   return Qnil;
 }
 
+SWIGINTERN VALUE _wrap_Song_pausedq___(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  bool result;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "paused", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    result = (bool)((Gosu::Song const *)arg1)->paused();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return result ? Qtrue : Qfalse;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_stop(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "stop", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    (arg1)->stop();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return Qnil;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_playingq___(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  bool result;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "playing", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    result = (bool)((Gosu::Song const *)arg1)->playing();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return result ? Qtrue : Qfalse;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_volume(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  double result;
+  VALUE vresult = Qnil;
+  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "volume", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    result = (double)((Gosu::Song const *)arg1)->volume();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  vresult = SWIG_From_double(static_cast< double >(result));
+  return vresult;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_volumee___(VALUE self, VALUE vol) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0 ;
+  double arg2 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  double val2 ;
+  int ecode2 = 0 ;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "set_volume", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  ecode2 = SWIG_AsVal_double(vol, &val2);
+  if (!SWIG_IsOK(ecode2))
+    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "double", "set_volume", 2, vol));
+  arg2 = static_cast< double >(val2);
+  try {
+    (arg1)->set_volume(arg2);
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return Qnil;
+fail:
+  return Qnil;
+}
+
+SWIGINTERN VALUE _wrap_Song_resume(VALUE self) {
+  Gosu::Song *arg1 = (Gosu::Song *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "resume", 1, self));
+  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
+  try {
+    (arg1)->resume();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  return Qnil;
+fail:
+  return Qnil;
+}
+
 SWIGINTERN VALUE _wrap_Song_position(VALUE self) {
   Gosu::Song *arg1 = (Gosu::Song *) 0;
   void *argp1 = 0;
@@ -8185,129 +7906,6 @@ SWIGINTERN VALUE _wrap_Song_sample_rate(VALUE self) {
 fail:
   return Qnil;
 }
-
-SWIGINTERN VALUE _wrap_Song_pausedq___(VALUE self) {
-  Gosu::Song *arg1 = (Gosu::Song *) 0;
-  void *argp1 = 0;
-  int res1 = 0;
-  bool result;
-  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
-  if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "paused", 1, self));
-  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  try {
-    result = (bool)((Gosu::Song const *)arg1)->paused();
-  } catch (const std::exception& e) {
-    SWIG_exception(SWIG_RuntimeError, e.what());
-  }
-  return result ? Qtrue : Qfalse;
-fail:
-  return Qnil;
-}
-
-SWIGINTERN VALUE _wrap_Song_resume(VALUE self) {
-  Gosu::Song *arg1 = (Gosu::Song *) 0;
-  void *argp1 = 0;
-  int res1 = 0;
-  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
-  if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "resume", 1, self));
-  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  try {
-    (arg1)->resume();
-  } catch (const std::exception& e) {
-    SWIG_exception(SWIG_RuntimeError, e.what());
-  }
-  return Qnil;
-fail:
-  return Qnil;
-}
-
-SWIGINTERN VALUE _wrap_Song_stop(VALUE self) {
-  Gosu::Song *arg1 = (Gosu::Song *) 0;
-  void *argp1 = 0;
-  int res1 = 0;
-  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
-  if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "stop", 1, self));
-  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  try {
-    (arg1)->stop();
-  } catch (const std::exception& e) {
-    SWIG_exception(SWIG_RuntimeError, e.what());
-  }
-  return Qnil;
-fail:
-  return Qnil;
-}
-
-SWIGINTERN VALUE _wrap_Song_playingq___(VALUE self) {
-  Gosu::Song *arg1 = (Gosu::Song *) 0;
-  void *argp1 = 0;
-  int res1 = 0;
-  bool result;
-  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
-  if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "playing", 1, self));
-  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  try {
-    result = (bool)((Gosu::Song const *)arg1)->playing();
-  } catch (const std::exception& e) {
-    SWIG_exception(SWIG_RuntimeError, e.what());
-  }
-  return result ? Qtrue : Qfalse;
-fail:
-  return Qnil;
-}
-
-
-SWIGINTERN VALUE _wrap_Song_volume(VALUE self) {
-  Gosu::Song *arg1 = (Gosu::Song *) 0;
-  void *argp1 = 0;
-  int res1 = 0;
-  double result;
-  VALUE vresult = Qnil;
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Song, 0 | 0);
-  if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "volume", 1, self));
-  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  try {
-    result = (double)((Gosu::Song const *)arg1)->volume();
-  } catch (const std::exception& e) {
-    SWIG_exception(SWIG_RuntimeError, e.what());
-  }
-  vresult = SWIG_From_double(static_cast< double >(result));
-  return vresult;
-fail:
-  return Qnil;
-}
-
-
-SWIGINTERN VALUE _wrap_Song_volumee___(VALUE self, VALUE vol) {
-  Gosu::Song *arg1 = (Gosu::Song *) 0 ;
-  double arg2 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  double val2 ;
-  int ecode2 = 0 ;
-  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Song, 0 | 0);
-  if (!SWIG_IsOK(res1))
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Song", "set_volume", 1, self));
-  arg1 = reinterpret_cast< Gosu::Song * >(argp1);
-  ecode2 = SWIG_AsVal_double(vol, &val2);
-  if (!SWIG_IsOK(ecode2))
-    SWIG_exception_fail(SWIG_ArgError(ecode2), Ruby_Format_TypeError("", "double", "set_volume", 2, vol));
-  arg2 = static_cast< double >(val2);
-  try {
-    (arg1)->set_volume(arg2);
-  } catch (const std::exception& e) {
-    SWIG_exception(SWIG_RuntimeError, e.what());
-  }
-  return Qnil;
-fail:
-  return Qnil;
-}
-
 
 SWIGINTERN VALUE _wrap_Song_update(VALUE self) {
   try {
@@ -11854,8 +11452,8 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_module_function(mGosu, "default_font_name", VALUEFUNC(_wrap_default_font_name), -1);
   rb_define_const(mGosu, "MAX_TEXTURE_SIZE", SWIG_From_unsigned_SS_int(static_cast< unsigned int >(Gosu::MAX_TEXTURE_SIZE)));
   rb_define_module_function(mGosu, "language", VALUEFUNC(_wrap_language), -1);
-  rb_define_module_function(mGosu, "enable_undocumented_retrofication", VALUEFUNC(_wrap_enable_undocumented_retrofication), -1);
-  rb_define_module_function(mGosu, "_release_all_openal_resources", VALUEFUNC(_wrap__release_all_openal_resources), -1);
+  rb_define_module_function(mGosu, "enable_undocumented_retrofication", VALUEFUNC(_wrap_enable_undocumented_retrofication), 0);
+  rb_define_module_function(mGosu, "_release_all_openal_resources", VALUEFUNC(_wrap__release_all_openal_resources), 0);
   // Define Color Class
   SwigClassColor.klass = rb_define_class_under(mGosu, "Color", rb_cObject);
   SWIG_TypeClientData(SWIGTYPE_p_Gosu__Color, (void *) &SwigClassColor);
@@ -11864,29 +11462,31 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_const(SwigClassColor.klass, "GL_FORMAT", SWIG_From_unsigned_SS_int(static_cast< unsigned int >(Gosu::Color::GL_FORMAT)));
   rb_define_singleton_method(SwigClassColor.klass, "from_hsv", VALUEFUNC(_wrap_Color_from_hsv), -1);
   rb_define_singleton_method(SwigClassColor.klass, "from_ahsv", VALUEFUNC(_wrap_Color_from_ahsv), -1);
-  rb_define_method(SwigClassColor.klass, "red", VALUEFUNC(_wrap_Color_red), -1);
-  rb_define_method(SwigClassColor.klass, "green", VALUEFUNC(_wrap_Color_green), -1);
-  rb_define_method(SwigClassColor.klass, "blue", VALUEFUNC(_wrap_Color_blue), -1);
-  rb_define_method(SwigClassColor.klass, "alpha", VALUEFUNC(_wrap_Color_alpha), -1);
-  rb_define_method(SwigClassColor.klass, "red=", VALUEFUNC(_wrap_Color_rede___), -1);
-  rb_define_method(SwigClassColor.klass, "green=", VALUEFUNC(_wrap_Color_greene___), -1);
-  rb_define_method(SwigClassColor.klass, "blue=", VALUEFUNC(_wrap_Color_bluee___), -1);
-  rb_define_method(SwigClassColor.klass, "alpha=", VALUEFUNC(_wrap_Color_alphae___), -1);
-  rb_define_method(SwigClassColor.klass, "hue", VALUEFUNC(_wrap_Color_hue), -1);
-  rb_define_method(SwigClassColor.klass, "hue=", VALUEFUNC(_wrap_Color_huee___), -1);
-  rb_define_method(SwigClassColor.klass, "saturation", VALUEFUNC(_wrap_Color_saturation), -1);
-  rb_define_method(SwigClassColor.klass, "saturation=", VALUEFUNC(_wrap_Color_saturatione___), -1);
-  rb_define_method(SwigClassColor.klass, "value", VALUEFUNC(_wrap_Color_value), -1);
-  rb_define_method(SwigClassColor.klass, "value=", VALUEFUNC(_wrap_Color_valuee___), -1);
-  rb_define_method(SwigClassColor.klass, "bgr", VALUEFUNC(_wrap_Color_bgr), -1);
-  rb_define_method(SwigClassColor.klass, "abgr", VALUEFUNC(_wrap_Color_abgr), -1);
-  rb_define_method(SwigClassColor.klass, "gl", VALUEFUNC(_wrap_Color_gl), -1);
+  rb_define_method(SwigClassColor.klass, "red", VALUEFUNC(_wrap_Color_red), 0);
+  rb_define_method(SwigClassColor.klass, "green", VALUEFUNC(_wrap_Color_green), 0);
+  rb_define_method(SwigClassColor.klass, "blue", VALUEFUNC(_wrap_Color_blue), 0);
+  rb_define_method(SwigClassColor.klass, "alpha", VALUEFUNC(_wrap_Color_alpha), 0);
+  rb_define_method(SwigClassColor.klass, "red=", VALUEFUNC(_wrap_Color_rede___), 1);
+  rb_define_method(SwigClassColor.klass, "green=", VALUEFUNC(_wrap_Color_greene___), 1);
+  rb_define_method(SwigClassColor.klass, "blue=", VALUEFUNC(_wrap_Color_bluee___), 1);
+  rb_define_method(SwigClassColor.klass, "alpha=", VALUEFUNC(_wrap_Color_alphae___), 1);
+  rb_define_method(SwigClassColor.klass, "hue", VALUEFUNC(_wrap_Color_hue), 0);
+  rb_define_method(SwigClassColor.klass, "hue=", VALUEFUNC(_wrap_Color_huee___), 1);
+  rb_define_method(SwigClassColor.klass, "saturation", VALUEFUNC(_wrap_Color_saturation), 0);
+  rb_define_method(SwigClassColor.klass, "saturation=", VALUEFUNC(_wrap_Color_saturatione___), 1);
+  rb_define_method(SwigClassColor.klass, "value", VALUEFUNC(_wrap_Color_value), 0);
+  rb_define_method(SwigClassColor.klass, "value=", VALUEFUNC(_wrap_Color_valuee___), 1);
+  rb_define_method(SwigClassColor.klass, "invert", VALUEFUNC(_wrap_Color_invert), 0);
+  rb_define_method(SwigClassColor.klass, "invert!", VALUEFUNC(_wrap_Color_invert_destructive), 0);
+  rb_define_method(SwigClassColor.klass, "bgr", VALUEFUNC(_wrap_Color_bgr), 0);
+  rb_define_method(SwigClassColor.klass, "abgr", VALUEFUNC(_wrap_Color_abgr), 0);
+  rb_define_method(SwigClassColor.klass, "gl", VALUEFUNC(_wrap_Color_gl), 0);
   rb_define_singleton_method(SwigClassColor.klass, "rgb", VALUEFUNC(_wrap_Color_rgb), -1);
   rb_define_singleton_method(SwigClassColor.klass, "rgba", VALUEFUNC(_wrap_Color_rgba), -1);
   rb_define_singleton_method(SwigClassColor.klass, "argb", VALUEFUNC(_wrap_Color_argb), -1);
-  rb_define_method(SwigClassColor.klass, "dup", VALUEFUNC(_wrap_Color_dup), -1);
-  rb_define_method(SwigClassColor.klass, "inspect", VALUEFUNC(_wrap_Color_inspect), -1);
-  rb_define_method(SwigClassColor.klass, "==", VALUEFUNC(_wrap_Color___eq__), -1);
+  rb_define_method(SwigClassColor.klass, "dup", VALUEFUNC(_wrap_Color_dup), 0);
+  rb_define_method(SwigClassColor.klass, "inspect", VALUEFUNC(_wrap_Color_inspect), 0);
+  rb_define_method(SwigClassColor.klass, "==", VALUEFUNC(_wrap_Color___eq__), 1);
   SwigClassColor.mark = 0;
   SwigClassColor.destroy = (void (*)(void *)) free_Gosu_Color;
   SwigClassColor.trackObjects = 1;
@@ -11938,13 +11538,13 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_method(SwigClassImage.klass, "draw_rot", VALUEFUNC(_wrap_Image_draw_rot), -1);
   rb_define_method(SwigClassImage.klass, "draw_as_quad", VALUEFUNC(_wrap_Image_draw_as_quad), -1);
   rb_define_method(SwigClassImage.klass, "gl_tex_info", VALUEFUNC(_wrap_Image_gl_tex_info), -1);
-  rb_define_method(SwigClassImage.klass, "subimage", VALUEFUNC(_wrap_Image_subimage), -1);
+  rb_define_method(SwigClassImage.klass, "subimage", VALUEFUNC(_wrap_Image_subimage), 4);
   rb_define_singleton_method(SwigClassImage.klass, "from_text", VALUEFUNC(_wrap_Image_from_text), -1);
   rb_define_singleton_method(SwigClassImage.klass, "load_tiles", VALUEFUNC(_wrap_Image_load_tiles), -1);
   rb_define_method(SwigClassImage.klass, "to_blob", VALUEFUNC(_wrap_Image_to_blob), -1);
-  rb_define_method(SwigClassImage.klass, "columns", VALUEFUNC(_wrap_Image_columns), -1);
-  rb_define_method(SwigClassImage.klass, "rows", VALUEFUNC(_wrap_Image_rows), -1);
-  rb_define_method(SwigClassImage.klass, "save", VALUEFUNC(_wrap_Image_save), -1);
+  rb_define_method(SwigClassImage.klass, "columns", VALUEFUNC(_wrap_Image_columns), 0);
+  rb_define_method(SwigClassImage.klass, "rows", VALUEFUNC(_wrap_Image_rows), 0);
+  rb_define_method(SwigClassImage.klass, "save", VALUEFUNC(_wrap_Image_save), 1);
   rb_define_method(SwigClassImage.klass, "insert", VALUEFUNC(_wrap_Image_insert), -1);
   rb_define_method(SwigClassImage.klass, "inspect", VALUEFUNC(_wrap_Image_inspect), -1);
   SwigClassImage.mark = 0;
@@ -12304,5 +11904,5 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_module_function(mGosu, "rotate", VALUEFUNC(_wrap_rotate), -1);
   rb_define_module_function(mGosu, "scale", VALUEFUNC(_wrap_scale), -1);
   rb_define_module_function(mGosu, "translate", VALUEFUNC(_wrap_translate), -1);
-  rect_class_init();
+  ruby_ext_init();
 }
