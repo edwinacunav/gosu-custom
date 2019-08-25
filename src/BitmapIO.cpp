@@ -57,12 +57,11 @@ namespace
     reader.read(magic_bytes, sizeof magic_bytes);
     return magic_bytes[0] == 'B' && magic_bytes[1] == 'M';
   }
-  bool apply_horizontal_flip(false);
 }
 
 void Gosu::enable_flip_h(bool flip_h)
-{//stbi_set_flip_horizontally_on_load(flip_h);
-  apply_horizontal_flip = flip_h;
+{
+  stbi_kyon_set_flip_horizontally_on_load(flip_h);
 }
 
 void Gosu::enable_flip_y(bool flip_y)
@@ -72,8 +71,8 @@ void Gosu::enable_flip_y(bool flip_y)
 
 void Gosu::enable_flip_h_y(bool flip_h, bool flip_y)
 {
+  stbi_kyon_set_flip_horizontally_on_load(flip_h);
   stbi_set_flip_vertically_on_load(flip_y);
-  apply_horizontal_flip = flip_h;
 }
 
 void Gosu::load_image_inverse_color(Gosu::Bitmap& bitmap, const string& filename)
@@ -87,6 +86,7 @@ void Gosu::load_image_inverse_color(Gosu::Bitmap& bitmap, const string& filename
 
 void Gosu::load_image_file(Gosu::Bitmap& bitmap, const string& filename)
 {
+  Debug() << filename;
   Buffer buffer;
   load_file(buffer, filename);
   load_image_file(bitmap, buffer.front_reader());
@@ -106,21 +106,8 @@ void Gosu::load_image_file(Gosu::Bitmap& bitmap, Reader input)
     throw runtime_error("Cannot load image: " + string(stbi_failure_reason()));
   }
   bitmap.resize(x, y);
-  if (apply_horizontal_flip) {
-    stbi_uc temp[x * y * n];//int rows = bitmap.width(), cols = bitmap.height();
-    for (int row = 0; row < x / 2; row++) {
-      for (int col = 0; col < y; col++) {
-        int sp = row * x + col;
-        int fp = row * x + y - col - 1;
-        temp[fp] = bytes[sp];
-        temp[sp] = bytes[fp];
-        if (row == 20) break;
-      }
-    }
-    memcpy(bitmap.data(), temp, x * y * sizeof(Gosu::Color));
-  } else {
-    memcpy(bitmap.data(), bytes, x * y * sizeof(Gosu::Color));
-  }
+  //Debug() << "Channels" << n << "GC" << sizeof(Gosu::Color) << "AR" << sizeof(stbi_uc) << "RA" << sizeof(bytes);
+  memcpy(bitmap.data(), bytes, x * y * sizeof(Gosu::Color));
   stbi_image_free(bytes);
   if (needs_color_key) apply_color_key(bitmap, Gosu::Color::FUCHSIA);
 }

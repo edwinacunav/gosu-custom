@@ -77,7 +77,7 @@ static VALUE module_reader(int argc, VALUE* argv, VALUE self)
     rb_define_attr(self, func_name, 1, 0);
   }
   VALUE meth = rb_obj_method(self, hc_sym("module_function"));
-  rb_method_call(argc, args, meth);
+  rb_method_call(argc, argv, meth);
   return Qnil;
 }
 
@@ -85,16 +85,16 @@ static VALUE module_writer(int argc, VALUE* argv, VALUE self)
 {
   if (!RB_TYPE_P(self, T_MODULE))
     rb_raise(rb_eTypeError, "module_writer is exclusive for modules!");
-  VALUE args[argc], basic_str, new_str;
+  VALUE basic_str, new_str;
   for (int n = 0 ; n < argc ; n++) {
     basic_str = rb_sym_to_s(argv[n]);
     const char* func_name = StringValueCStr(basic_str);
     new_str = rb_str_plus(basic_str, rb_str_new_cstr("="));
-    args[n] = hc_sym2(new_str);
+    argv[n] = hc_sym2(new_str);
     rb_define_attr(self, func_name, 0, 1);
   }
   VALUE meth = rb_obj_method(self, hc_sym("module_function"));
-  rb_method_call(argc, args, meth);
+  rb_method_call(argc, argv, meth);
   return Qnil;
 }
 
