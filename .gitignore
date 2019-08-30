@@ -9,3 +9,9 @@ RubyFont.hpp
 RubyText.cpp
 RubyText.hpp
 log.txt
+headers/IMG_saveend.h
+headers/IMG_savejpg.h
+headers/IMG_savepng.h
+src/IMG_savejpg.c
+src/IMG_savepng.c
+mkmf.log
