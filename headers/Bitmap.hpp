@@ -91,6 +91,7 @@ public:
   //! Saves a Bitmap to an arbitrary resource.
   void save_image_file(const Bitmap& bitmap, Writer writer,
     const std::string& format_hint = "png");
+  void save_image_file(const std::string& filename, unsigned w, unsigned h, unsigned char*  data);
   //! Set the alpha value of all pixels which are equal to the color key
   //! to zero. Color values are adjusted so that no borders show up when
   //! the image is stretched or rotated.

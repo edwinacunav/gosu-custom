@@ -4,9 +4,13 @@
 #include "Gosu.hpp"
 #include "GraphicsImpl.hpp"
 #include <SDL.h>
+#include <SDL_image.h>
 #include <cstdlib>
 #include <algorithm>
 #include <stdexcept>
+#include <time.h>
+#include <sys/time.h>
+#include "debugwriter.h"
 using namespace std;
 
 namespace Gosu
@@ -244,37 +248,36 @@ bool Gosu::Window::tick()
     graphics().set_physical_resolution(width, height);
   }
   SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-        switch (e.type) {
-        #ifdef GOSU_IS_MAC
-            // Workaround for https://github.com/gosu/gosu/issues/458
-            // "Resize" the window to its current dimensions after it is shown.
-            // Otherwise it will be black on macOS 10.14 (Mojave) until the user moves it around.
-            // TODO: Since this affects `brew install supertux` as well, maybe file an SDL bug?
-            case SDL_WINDOWEVENT: {
-                if (e.window.event == SDL_WINDOWEVENT_SHOWN) {
-                    resize(this->width(), this->height(), fullscreen());
-                }
-                break;
-            }
-        #endif
-            case SDL_QUIT: {
-                close();
-                break;
-            }
-            case SDL_DROPFILE: {
-                char* dropped_filedir = e.drop.file;
-                if (dropped_filedir == nullptr) break;
-                drop(string(dropped_filedir));
-                SDL_free(dropped_filedir);
-                break;
-            }
-            default: {
-                input().feed_sdl_event(&e);
-                break;
-            }
-        }
+  while (SDL_PollEvent(&e)) {
+    switch (e.type) {
+    #ifdef GOSU_IS_MAC
+    // Workaround for https://github.com/gosu/gosu/issues/458
+    // "Resize" the window to its current dimensions after it is shown.
+    // Otherwise it will be black on macOS 10.14 (Mojave) until the user moves it around.
+    // TODO: Since this affects `brew install supertux` as well, maybe file an SDL bug?
+    case SDL_WINDOWEVENT: {
+      if (e.window.event == SDL_WINDOWEVENT_SHOWN)
+        resize(this->width(), this->height(), fullscreen());
+      break;
     }
+    #endif
+    case SDL_QUIT: {
+      close();
+      break;
+    }
+    case SDL_DROPFILE: {
+      char* dropped_filedir = e.drop.file;
+      if (dropped_filedir == nullptr) break;
+      drop(string(dropped_filedir));
+      SDL_free(dropped_filedir);
+      break;
+    }
+    default: {
+      input().feed_sdl_event(&e);
+      break;
+    }
+    }
+  }
   Song::update();
   input().update();
   update();
@@ -292,64 +295,96 @@ bool Gosu::Window::tick()
   return pimpl->state == Impl::OPEN;
 }
 
+void Gosu::Window::save_screenshot(const std::string &format)
+{
+  time_t rt = time(NULL);
+  char filename[120];
+  size_t surface_len = width() * height() * sizeof(uint8_t);//surface->format->BytesPerPixel
+  unsigned char *pixels = new unsigned char[surface_len];
+  tm *tmp = localtime(&rt);
+  sprintf(filename, "Screenshots/shot_%d-%02d-%02d_%02d%02d%02d.%s", tmp->tm_year+1900,
+      tmp->tm_mon+1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec, format.c_str());
+  SDL_Surface* surface = SDL_GetWindowSurface(shared_window());
+  SDL_LockSurface(surface);
+  if (!surface) {
+    printf("Error: No valid surface could be found.");
+    SDL_FreeSurface(surface);
+    return;
+  }
+  //Gosu::save_image_file(filename, width(), height(), pixels);
+  //SDL_FreeSurface(surface);
+  //if (format == "bmp") {
+    //if ( IMG_SaveBMP(surface, filename) != 0 )
+    //  Debug() << "Freeing BMP surface after failure";
+  if (format == "jpg") {
+    if ( IMG_SaveJPG(surface, filename, 95) != 0 )
+      Debug() << "Freeing JPG surface after failure";
+  } else {
+    if ( IMG_SavePNG(surface, filename) != 0 )
+      Debug() << "Freeing PNG surface after failure";
+  }//
+  delete[] pixels;
+  Debug() << "Sent data to Bitmap";
+  //Bitmap bmp;
+  //bmp.resize(width(), height());
+  //Gosu::Color *bytes = bmp.data();
+  //memcpy(bytes, pixels, surface_len);
+  //Gosu::save_image_file(bmp, filename);
+}
+
 void Gosu::Window::close()
 {
-    pimpl->state = Impl::CLOSING;
-    SDL_HideWindow(shared_window());
+  pimpl->state = Impl::CLOSING;
+  SDL_HideWindow(shared_window());
 }
 
 void Gosu::Window::button_down(Button button)
 {
-    bool toggle_fullscreen;
-
-    // Default shortcuts for toggling fullscreen mode, see: https://github.com/gosu/gosu/issues/361
-    
+  bool toggle_fullscreen;
+  // Default shortcuts for toggling fullscreen mode, see: https://github.com/gosu/gosu/issues/361
 #ifdef GOSU_IS_MAC
-    // cmd+F and cmd+ctrl+F are both common shortcuts for toggling fullscreen mode on macOS.
-    toggle_fullscreen = button == KB_F &&
-        (Input::down(KB_LEFT_META) || Input::down(KB_RIGHT_META)) &&
-        !Input::down(KB_LEFT_SHIFT) && !Input::down(KB_RIGHT_SHIFT) &&
-        !Input::down(KB_LEFT_ALT) && !Input::down(KB_RIGHT_ALT);
+  // cmd+F and cmd+ctrl+F are both common shortcuts for toggling fullscreen mode on macOS.
+  toggle_fullscreen = button == KB_F &&
+      (Input::down(KB_LEFT_META) || Input::down(KB_RIGHT_META)) &&
+      !Input::down(KB_LEFT_SHIFT) && !Input::down(KB_RIGHT_SHIFT) &&
+      !Input::down(KB_LEFT_ALT) && !Input::down(KB_RIGHT_ALT);
 #else
-    // Alt+Enter and Alt+Return toggle fullscreen mode on all other platforms.
-    toggle_fullscreen = (button == KB_RETURN || button == KB_ENTER) &&
-        (Input::down(KB_LEFT_ALT)     || Input::down(KB_RIGHT_ALT)) &&
-        !Input::down(KB_LEFT_CONTROL) && !Input::down(KB_RIGHT_CONTROL) &&
-        !Input::down(KB_LEFT_META)    && !Input::down(KB_RIGHT_META) &&
-        !Input::down(KB_LEFT_SHIFT)   && !Input::down(KB_RIGHT_SHIFT);
+  // Alt+Enter and Alt+Return toggle fullscreen mode on all other platforms.
+  toggle_fullscreen = (button == KB_RETURN || button == KB_ENTER) &&
+      (Input::down(KB_LEFT_ALT)     || Input::down(KB_RIGHT_ALT)) &&
+      !Input::down(KB_LEFT_CONTROL) && !Input::down(KB_RIGHT_CONTROL) &&
+      !Input::down(KB_LEFT_META)    && !Input::down(KB_RIGHT_META) &&
+      !Input::down(KB_LEFT_SHIFT)   && !Input::down(KB_RIGHT_SHIFT);
 #endif
-    // F11 is supported as a shortcut for fullscreen mode on all platforms.
-    if (!toggle_fullscreen && button == KB_F11 &&
-        !Input::down(KB_LEFT_ALT)     && !Input::down(KB_RIGHT_ALT) &&
-        !Input::down(KB_LEFT_CONTROL) && !Input::down(KB_RIGHT_CONTROL) &&
-        !Input::down(KB_LEFT_META)    && !Input::down(KB_RIGHT_META) &&
-        !Input::down(KB_LEFT_SHIFT)   && !Input::down(KB_RIGHT_SHIFT)) {
-        toggle_fullscreen = true;
-    }
-
-    if (toggle_fullscreen) {
-        resize(width(), height(), !fullscreen());
-    }
+  // F11 is supported as a shortcut for fullscreen mode on all platforms.
+  if (!toggle_fullscreen && button == KB_F11 &&
+      !Input::down(KB_LEFT_ALT)     && !Input::down(KB_RIGHT_ALT) &&
+      !Input::down(KB_LEFT_CONTROL) && !Input::down(KB_RIGHT_CONTROL) &&
+      !Input::down(KB_LEFT_META)    && !Input::down(KB_RIGHT_META) &&
+      !Input::down(KB_LEFT_SHIFT)   && !Input::down(KB_RIGHT_SHIFT)) {
+      toggle_fullscreen = true;
+  }
+  if (toggle_fullscreen) resize(width(), height(), !fullscreen());
 }
 
 const Gosu::Graphics& Gosu::Window::graphics() const
 {
-    return *pimpl->graphics;
+  return *pimpl->graphics;
 }
 
 Gosu::Graphics& Gosu::Window::graphics()
 {
-    return *pimpl->graphics;
+  return *pimpl->graphics;
 }
 
 const Gosu::Input& Gosu::Window::input() const
 {
-    return *pimpl->input;
+  return *pimpl->input;
 }
 
 Gosu::Input& Gosu::Window::input()
 {
-    return *pimpl->input;
+  return *pimpl->input;
 }
 
 #endif

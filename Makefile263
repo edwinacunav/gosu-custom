@@ -12,12 +12,12 @@ NULLCMD = :
 #### Start of system configuration section. ####
 
 srcdir = ../src
-topdir = /home/edwin/.rbenv/versions/2.6.4/include/ruby-2.6.0
+topdir = /home/edwin/.rbenv/versions/2.6.3/include/ruby-2.6.0
 hdrdir = $(topdir)
-arch_hdrdir = /home/edwin/.rbenv/versions/2.6.4/include/ruby-2.6.0/x86_64-linux
+arch_hdrdir = /home/edwin/.rbenv/versions/2.6.3/include/ruby-2.6.0/x86_64-linux
 PATH_SEPARATOR = :
 VPATH = $(srcdir):$(arch_hdrdir)/ruby:$(hdrdir)/ruby
-prefix = $(DESTDIR)/home/edwin/.rbenv/versions/2.6.4
+prefix = $(DESTDIR)/home/edwin/.rbenv/versions/2.6.3
 rubysitearchprefix = $(rubylibprefix)/$(sitearch)
 rubyarchprefix = $(rubylibprefix)/$(arch)
 rubylibprefix = $(libdir)/$(RUBY_BASE_NAME)
@@ -85,10 +85,10 @@ CCDLFLAGS = -fPIC
 CFLAGS   = $(CCDLFLAGS) $(cflags) -DGOSU_DEPRECATED=  -D_REENTRANT   $(ARCH_FLAG)
 INCFLAGS = -I../headers -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/usr/include/libdrm -I/usr/include/SDL2  -I/usr/include/AL   -I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include/freetype2 -I/usr/include/libpng16
 DEFS     = 
-CPPFLAGS = -DHAVE_AL_AL_H -I/home/edwin/.rbenv/versions/2.6.4/include  $(DEFS) $(cppflags) -w
+CPPFLAGS = -DHAVE_AL_AL_H -I/home/edwin/.rbenv/versions/2.6.3/include  $(DEFS) $(cppflags) -w
 CXXFLAGS = $(CCDLFLAGS) $(cxxflags) -std=gnu++11  -D_REENTRANT   $(ARCH_FLAG)
-ldflags  = -L. -L/home/edwin/.rbenv/versions/2.6.4/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic 
-dldflags = -L/home/edwin/.rbenv/versions/2.6.4/lib  -Wl,--compress-debug-sections=zlib 
+ldflags  = -L. -L/home/edwin/.rbenv/versions/2.6.3/lib  -fstack-protector-strong -rdynamic -Wl,-export-dynamic 
+dldflags = -L/home/edwin/.rbenv/versions/2.6.3/lib  -Wl,--compress-debug-sections=zlib 
 ARCH_FLAG = 
 DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = $(CC) -shared
@@ -135,10 +135,10 @@ extout =
 extout_prefix = 
 target_prefix = 
 LOCAL_LIBS = 
-LIBS = $(LIBRUBYARG_SHARED) -lGL -lSDL2 -lSDL2_image -lvorbisfile -lopenal -lsndfile -lmpg123 -lfontconfig -lfreetype -lpthread -lgmp -ldl -lcrypt -lm   -lc
-ORIG_SRCS = RubyExt.cpp Audio.cpp AudioImpl.cpp Bitmap.cpp BitmapIO.cpp BlockAllocator.cpp Channel.cpp Color.cpp DirectoriesUnix.cpp FileUnix.cpp Font.cpp Graphics.cpp IO.cpp Image.cpp Input.cpp Inspection.cpp LargeImageData.cpp Macro.cpp MarkupParser.cpp Math.cpp OffScreenTarget.cpp Resolution.cpp RubyGosu.cpp TexChunk.cpp Text.cpp TextBuilder.cpp TextInput.cpp Texture.cpp TimingUnix.cpp Transform.cpp TrueTypeFont.cpp TrueTypeFontUnix.cpp Utility.cpp Version.cpp WinMain.cpp Window.cpp stb_vorbis.c utf8proc.c
+LIBS = $(LIBRUBYARG_SHARED) -lopenal  -lGL -lSDL2 -lvorbisfile -lopenal -lsndfile -lmpg123 -lfontconfig -lfreetype -lpthread -lgmp -ldl -lcrypt -lm   -lc
+ORIG_SRCS = Audio.cpp AudioImpl.cpp Bitmap.cpp BitmapIO.cpp BlockAllocator.cpp Channel.cpp Color.cpp DirectoriesUnix.cpp FileUnix.cpp Font.cpp Graphics.cpp IO.cpp Image.cpp Input.cpp Inspection.cpp LargeImageData.cpp Macro.cpp MarkupParser.cpp Math.cpp OffScreenTarget.cpp Resolution.cpp RubyExt.cpp RubyGosu.cpp TexChunk.cpp Text.cpp TextBuilder.cpp TextInput.cpp Texture.cpp TimingUnix.cpp Transform.cpp TrueTypeFont.cpp TrueTypeFontUnix.cpp Utility.cpp Version.cpp WinMain.cpp Window.cpp stb_vorbis.c utf8proc.c
 SRCS = $(ORIG_SRCS) 
-OBJS = RubyExt.o Audio.o AudioImpl.o Bitmap.o BitmapIO.o BlockAllocator.o Channel.o Color.o DirectoriesUnix.o FileUnix.o Font.o Graphics.o IO.o Image.o Input.o Inspection.o LargeImageData.o Macro.o MarkupParser.o Math.o OffScreenTarget.o Resolution.o RubyGosu.o TexChunk.o Text.o TextBuilder.o TextInput.o Texture.o TimingUnix.o Transform.o TrueTypeFont.o TrueTypeFontUnix.o Utility.o Version.o WinMain.o Window.o stb_vorbis.o utf8proc.o
+OBJS = Audio.o AudioImpl.o Bitmap.o BitmapIO.o BlockAllocator.o Channel.o Color.o DirectoriesUnix.o FileUnix.o Font.o Graphics.o IO.o Image.o Input.o Inspection.o LargeImageData.o Macro.o MarkupParser.o Math.o OffScreenTarget.o Resolution.o RubyExt.o RubyGosu.o TexChunk.o Text.o TextBuilder.o TextInput.o Texture.o TimingUnix.o Transform.o TrueTypeFont.o TrueTypeFontUnix.o Utility.o Version.o WinMain.o Window.o stb_vorbis.o utf8proc.o
 HDRS = 
 LOCAL_HDRS = headers/debugwriter.h
 TARGET = gosu

@@ -86,7 +86,6 @@ void Gosu::load_image_inverse_color(Gosu::Bitmap& bitmap, const string& filename
 
 void Gosu::load_image_file(Gosu::Bitmap& bitmap, const string& filename)
 {
-  Debug() << filename;
   Buffer buffer;
   load_file(buffer, filename);
   load_image_file(bitmap, buffer.front_reader());
@@ -106,7 +105,6 @@ void Gosu::load_image_file(Gosu::Bitmap& bitmap, Reader input)
     throw runtime_error("Cannot load image: " + string(stbi_failure_reason()));
   }
   bitmap.resize(x, y);
-  //Debug() << "Channels" << n << "GC" << sizeof(Gosu::Color) << "AR" << sizeof(stbi_uc) << "RA" << sizeof(bytes);
   memcpy(bitmap.data(), bytes, x * y * sizeof(Gosu::Color));
   stbi_image_free(bytes);
   if (needs_color_key) apply_color_key(bitmap, Gosu::Color::FUCHSIA);
@@ -131,6 +129,8 @@ void Gosu::save_image_file(const Gosu::Bitmap& bitmap, const string& filename)
     ok = stbi_write_bmp(filename.c_str(), bitmap.width(), bitmap.height(), 4, bitmap.data());
   else if (has_extension(filename, "tga"))
     ok = stbi_write_tga(filename.c_str(), bitmap.width(), bitmap.height(), 4, bitmap.data());
+  else if (has_extension(filename, "jpg") || has_extension(filename, "jpeg"))
+    ok = stbi_write_jpg(filename.c_str(), bitmap.width(), bitmap.height(), 4, bitmap.data(), 95);
   else
     ok = stbi_write_png(filename.c_str(), bitmap.width(), bitmap.height(), 4, bitmap.data(), 0);
   if (ok == 0) throw runtime_error("Could not save image data to file: " + filename);
@@ -148,16 +148,31 @@ void Gosu::save_image_file(const Gosu::Bitmap& bitmap, Gosu::Writer writer,
   if (has_extension(format_hint, "bmp")) {
     ok = stbi_write_bmp_to_func(stbi_write_to_writer, &writer, bitmap.width(), bitmap.height(),
       4, bitmap.data());
-  }
-  else if (has_extension(format_hint, "tga")) {
+  } else if (has_extension(format_hint, "tga")) {
     stbi_write_tga_with_rle = 0;
     ok = stbi_write_tga_to_func(stbi_write_to_writer, &writer, bitmap.width(), bitmap.height(),
       4, bitmap.data());
-  }
-  else {
+  } else if (has_extension(format_hint, "jpg") || has_extension(format_hint, "jpeg")) {
+    ok = stbi_write_jpg_to_func(stbi_write_to_writer, &writer, bitmap.width(), bitmap.height(),
+      4, bitmap.data(), 95);
+  } else {
     ok = stbi_write_png_to_func(stbi_write_to_writer, &writer, bitmap.width(), bitmap.height(),
       4, bitmap.data(), 0);
   }
   if (ok > 0) return;
   throw runtime_error("Could not save image data to memory (format hint = '" + format_hint + "'");
+}
+
+void Gosu::save_image_file(const string& filename, unsigned w, unsigned h, unsigned char* data)
+{
+  int ok;
+  if (has_extension(filename, "bmp"))
+    ok = stbi_write_bmp(filename.c_str(), w, h, 4, data);
+  else if (has_extension(filename, "tga"))
+    ok = stbi_write_tga(filename.c_str(), w, h, 4, data);
+  else if (has_extension(filename, "jpg") || has_extension(filename, "jpeg"))
+    ok = stbi_write_jpg(filename.c_str(), w, h, 4, data, 95);
+  else
+    ok = stbi_write_png(filename.c_str(), w, h, 4, data, 0);
+  if (ok == 0) throw runtime_error("Could not save image data to file: " + filename);
 }

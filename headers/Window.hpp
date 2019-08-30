@@ -49,6 +49,7 @@ namespace Gosu
     void set_update_interval(double update_interval);
     std::string caption() const;
     void set_caption(const std::string& caption);
+    void save_screenshot(const std::string& format);
     //! Enters a modal loop where the Window is visible on screen and
     //! receives calls to draw, update etc.
     virtual void show();

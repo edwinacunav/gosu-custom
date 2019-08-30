@@ -11,10 +11,10 @@
 #include "debugwriter.h"
 #ifdef GOSU_IS_MAC
 #import <Foundation/Foundation.h>
-#include <headers/AudioToolboxFile.hpp>
+#include "AudioToolboxFile.hpp"
 #else
-#include <headers/MPEGFile.hpp>
-#include <headers/SndFile.hpp>
+#include "MPEGFile.hpp"
+#include "SndFile.hpp"
 #endif
 
 #ifdef GOSU_IS_IPHONE

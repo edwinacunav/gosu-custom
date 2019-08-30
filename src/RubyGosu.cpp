@@ -1511,7 +1511,7 @@ SWIG_Ruby_define_class(swig_type_info *type)
 {
   char *klass_name = (char *) malloc(4 + strlen(type->name) + 1);
   sprintf(klass_name, "TYPE%s", type->name);
-  if (NIL_P(_cSWIG_Pointer)) {
+  if (RB_NIL_P(_cSWIG_Pointer)) {
     _cSWIG_Pointer = rb_define_class_under(_mSWIG, "Pointer", rb_cObject);
     rb_undef_method(CLASS_OF(_cSWIG_Pointer), "new");
   }
@@ -2775,7 +2775,7 @@ SWIGINTERN double Gosu_Font_markup_width(Gosu::Font *self, std::string const &ma
 //#include "debugwriter.h"
 static VALUE get_hash_value(VALUE options, char *name)
 {
-  rb_hash_delete(options, rb_id2sym(rb_intern(name)));
+  return rb_hash_delete(options, rb_id2sym(rb_intern(name)));
 }
 
 SWIGINTERN Gosu::Image *new_Gosu_Image(VALUE source, VALUE options=0) {
@@ -2784,20 +2784,20 @@ SWIGINTERN Gosu::Image *new_Gosu_Image(VALUE source, VALUE options=0) {
   unsigned src_width = 0, src_height = 0, normal_color = 1;
   Gosu::enable_flip_h_y(false, false);
   if (RB_TYPE_P(options, T_HASH)) {
-    if (get_hash_value(options,"tileable") == Qtrue)
+    if (get_hash_value(options, "tileable") == Qtrue)
       flags |= Gosu::IF_TILEABLE;
-    if (get_hash_value(options,"retro") == Qtrue)
+    if (get_hash_value(options, "retro") == Qtrue)
       flags |= Gosu::IF_RETRO;
-    if (get_hash_value(options,"flip_h") == Qtrue)
+    if (get_hash_value(options, "flip_h") == Qtrue)
       Gosu::enable_flip_h(true);
-    if (get_hash_value(options,"flip_y") == Qtrue)
+    if (get_hash_value(options, "flip_y") == Qtrue)
       Gosu::enable_flip_y(true);
     if (get_hash_value(options, "invert") == Qtrue) {
       normal_color = 0;
       std::string fn = StringValueCStr(source);
       Gosu::load_image_inverse_color(bmp, fn);
     }
-    VALUE ary = get_hash_value(options,"rect");
+    VALUE ary = get_hash_value(options, "rect");
     if (RB_TYPE_P(ary, T_ARRAY)) {
       if (rb_array_len(ary) != 4)
         rb_raise(rb_eArgError, "Argument passed to :rect must be a four-element "
@@ -2841,6 +2841,7 @@ SWIGINTERN Gosu::Image *Gosu_Image_from_text(std::string const &markup, double f
   if (options) {
     Check_Type(options, T_HASH);
     VALUE keys = rb_funcall(options, rb_intern("keys"), 0, NULL);
+    rb_p(options);
     int keys_size = rb_array_len(keys);
     for (int i = 0; i < keys_size; ++i) {
       VALUE key = rb_ary_entry(keys, i);
@@ -8635,30 +8636,20 @@ fail:
   return Qnil;
 }
 
-
-SWIGINTERN VALUE
-_wrap_Window_caption(int argc, VALUE *argv, VALUE self) {
-  Gosu::Window *arg1 = (Gosu::Window *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
+SWIGINTERN VALUE _wrap_Window_caption(VALUE self) {
+  Gosu::Window *arg1 = (Gosu::Window *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
   std::string result;
   VALUE vresult = Qnil;
-  
-  if ((argc < 0) || (argc > 0)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Window, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window const *","caption", 1, self )); 
-  }
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Window, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Window", "caption", 1, self));
   arg1 = reinterpret_cast< Gosu::Window * >(argp1);
-  {
-    try {
-      result = ((Gosu::Window const *)arg1)->caption();
-    }
-    catch (const std::exception& e) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
+  try {
+    result = ((Gosu::Window const *)arg1)->caption();
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
   }
   vresult = SWIG_From_std_string(static_cast< std::string >(result));
   return vresult;
@@ -8666,37 +8657,29 @@ fail:
   return Qnil;
 }
 
-SWIGINTERN VALUE _wrap_Window_captione___(int argc, VALUE *argv, VALUE self) {
-  Gosu::Window *arg1 = (Gosu::Window *) 0 ;
-  std::string *arg2 = 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int res2 = SWIG_OLDOBJ ;
-  
-  if ((argc < 1) || (argc > 1)) {
-    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc); SWIG_fail;
-  }
-  res1 = SWIG_ConvertPtr(self, &argp1,SWIGTYPE_p_Gosu__Window, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError( "", "Gosu::Window *","set_caption", 1, self )); 
-  }
+SWIGINTERN VALUE _wrap_Window_captione___(VALUE self, VALUE text) {
+  Gosu::Window *arg1 = (Gosu::Window *) 0;
+  std::string *arg2 = 0;
+  void *argp1 = 0;
+  int res1 = 0;
+  int res2 = SWIG_OLDOBJ;
+  res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Window, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Window", "caption=", 1, self));
   arg1 = reinterpret_cast< Gosu::Window * >(argp1);
   {
     std::string *ptr = (std::string *)0;
-    res2 = SWIG_AsPtr_std_string(argv[0], &ptr);
-    if (!SWIG_IsOK(res2)) {
-      SWIG_exception_fail(SWIG_ArgError(res2), Ruby_Format_TypeError( "", "std::string const &","set_caption", 2, argv[0] )); 
-    }
-    if (!ptr) {
-      SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "std::string const &","set_caption", 2, argv[0])); 
-    }
+    res2 = SWIG_AsPtr_std_string(text, &ptr);
+    if (!SWIG_IsOK(res2))
+      SWIG_exception_fail(SWIG_ArgError(res2), Ruby_Format_TypeError("", "String", "caption=", 2, text));
+    if (!ptr)
+      SWIG_exception_fail(SWIG_ValueError, Ruby_Format_TypeError("invalid null reference ", "String", "caption=", 2, text));
     arg2 = ptr;
   }
   {
     try {
       (arg1)->set_caption((std::string const &)*arg2);
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
       SWIG_exception(SWIG_RuntimeError, e.what());
     }
   }
@@ -8707,10 +8690,42 @@ fail:
   return Qnil;
 }
 
+SWIGINTERN VALUE _wrap_Window_save_screenshot(VALUE self, VALUE fmt)
+{
+  VALUE dir = rb_str_new_cstr("Screenshots");
+  Gosu::Window *arg1 = (Gosu::Window *) 0;
+  void *argp1 = 0;
+  std::string format = StringValueCStr(fmt);
+  int res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Window, 0 | 0);
+  if (!SWIG_IsOK(res1))
+    SWIG_exception_fail(SWIG_ArgError(res1), Ruby_Format_TypeError("", "Gosu::Window", "save_screenshot", 1, self));
+  arg1 = reinterpret_cast< Gosu::Window * >(argp1);
+  if (!RB_TYPE_P(fmt, T_STRING)) {
+    const char* classname = rb_obj_classname(fmt);
+    rb_raise(rb_eTypeError, "received %s, expected object of String class instead", classname);
+    return Qnil;
+  }
+  if (!rb_file_directory_p(rb_cDir, dir)) {
+    rb_funcall(rb_cDir, rb_intern("mkdir"), 1, dir);
+    rb_p(rb_str_new_cstr("Successfully created the Screenshots directory!"));
+  }
+  try {
+  rb_p(rb_str_new_cstr("save_screenshot function step 9a\n"));
+    (arg1)->save_screenshot(format);
+  } catch (const std::exception& e) {
+  rb_p(rb_str_new_cstr("save_screenshot function step 9b\n"));
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+  rb_p(rb_str_new_cstr("save_screenshot function step 10\n"));
+  return Qnil;
+fail:
+  return Qnil;
+}
+
 SWIGINTERN VALUE _wrap_Window_show(VALUE self) {
-  Gosu::Window *arg1 = (Gosu::Window *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
+  Gosu::Window *arg1 = (Gosu::Window *) 0;
+  void *argp1 = 0;
+  int res1 = 0;
   Swig::Director *director = 0;
   bool upcall = false;
   res1 = SWIG_ConvertPtr(self, &argp1, SWIGTYPE_p_Gosu__Window, 0 | 0);
@@ -11433,11 +11448,11 @@ SWIGEXPORT void Init_gosu(void) {
   for (i = 0; i < swig_module.size; i++)
     SWIG_define_class(swig_module.types[i]);
   SWIG_RubyInitializeTrackings();
-  rb_define_const(mGosu, "VERSION", SWIG_NewPointerObj(SWIG_as_voidptr(&Gosu::VERSION),SWIGTYPE_p_std__string, 0 ));
+  rb_define_const(mGosu, "VERSION", rb_str_new_cstr(Gosu::VERSION.c_str()));
   rb_define_const(mGosu, "LICENSES", SWIG_NewPointerObj(SWIG_as_voidptr(&Gosu::LICENSES),SWIGTYPE_p_std__string, 0 ));
-  rb_define_const(mGosu, "MAJOR_VERSION", SWIG_From_int(static_cast< int >(0)));
-  rb_define_const(mGosu, "MINOR_VERSION", SWIG_From_int(static_cast< int >(15)));
-  rb_define_const(mGosu, "POINT_VERSION", SWIG_From_int(static_cast< int >(1)));
+  rb_define_const(mGosu, "MAJOR_VERSION", RB_INT2FIX(0));
+  rb_define_const(mGosu, "MINOR_VERSION", RB_INT2FIX(15));
+  rb_define_const(mGosu, "POINT_VERSION", RB_INT2FIX(0));
   rb_define_const(mGosu, "CONTRIBUTORS", rb_str_new_cstr("Julian Raschke, Jan Lücker, Kyonides Arkanthes and others"));
   rb_define_module_function(mGosu, "milliseconds", VALUEFUNC(_wrap_milliseconds), -1);
   rb_define_module_function(mGosu, "random", VALUEFUNC(_wrap_random), -1);
@@ -11853,8 +11868,9 @@ SWIGEXPORT void Init_gosu(void) {
   rb_define_method(SwigClassWindow.klass, "show_cursor?", VALUEFUNC(_wrap_Window_show_cursorq___), -1);
   rb_define_method(SwigClassWindow.klass, "update_interval", VALUEFUNC(_wrap_Window_update_interval), -1);
   rb_define_method(SwigClassWindow.klass, "update_interval=", VALUEFUNC(_wrap_Window_update_intervale___), -1);
-  rb_define_method(SwigClassWindow.klass, "caption", VALUEFUNC(_wrap_Window_caption), -1);
-  rb_define_method(SwigClassWindow.klass, "caption=", VALUEFUNC(_wrap_Window_captione___), -1);
+  rb_define_method(SwigClassWindow.klass, "caption", VALUEFUNC(_wrap_Window_caption), 0);
+  rb_define_method(SwigClassWindow.klass, "caption=", VALUEFUNC(_wrap_Window_captione___), 1);
+  rb_define_method(SwigClassWindow.klass, "save_screenshot", VALUEFUNC(_wrap_Window_save_screenshot), 1);
   rb_define_method(SwigClassWindow.klass, "show", VALUEFUNC(_wrap_Window_show), 0);
   rb_define_method(SwigClassWindow.klass, "tick", VALUEFUNC(_wrap_Window_tick), -1);
   rb_define_method(SwigClassWindow.klass, "close", VALUEFUNC(_wrap_Window_close), -1);
