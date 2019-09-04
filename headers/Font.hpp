@@ -2,7 +2,6 @@
 //! Interface of the Font class.
 
 #pragma once
-
 #include "Fwd.hpp"
 #include "Color.hpp"
 #include "GraphicsBase.hpp"
@@ -17,8 +16,7 @@ namespace Gosu
   //! For large, static texts you should use Gosu::layout_text and turn the result into an image.
   class Font
   {
-    struct Impl;
-    std::shared_ptr<Impl> pimpl;
+    struct Impl;//std::ptr<Impl> pimpl;
 
 public:
     //! Constructs a font that can be drawn onto the graphics object.
@@ -28,12 +26,20 @@ public:
     //! \param font_flags Flags used to render individual characters of
     //!        the font.
     Font(int height, const std::string& name = default_font_name(), unsigned flags = 0);
+    ~Font();
     //! Returns the name of the font that was used to create it.
     const std::string& name() const;
     //! Returns the height of the font, in pixels.
     int height() const;
     //! Returns the flags used to create the font characters.
     unsigned flags() const;
+    const std::string& text() const;
+    Gosu::Color* color() const;
+    bool visible() const;
+    void set_text(const std::string& text);
+    void set_color(Gosu::Color* color);
+    void set_visible(bool seen);
+    double set_text_width() const;
     //! Returns the width, in pixels, the given text would occupy if drawn.
     double text_width(const std::string& text) const;
     //! Returns the width, in pixels, the given text would occupy if drawn.
@@ -69,5 +75,7 @@ public:
     void set_image(std::string codepoint, unsigned font_flags, const Gosu::Image& image);
     //! A shortcut for mapping a character to an image regardless of font_flags.
     void set_image(std::string codepoint, const Gosu::Image& image);
+private:
+    Impl *pimpl;
   };
 }

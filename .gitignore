@@ -15,3 +15,4 @@ headers/IMG_savepng.h
 src/IMG_savejpg.c
 src/IMG_savepng.c
 mkmf.log
+swig flags methods comments.txt

@@ -28,7 +28,7 @@ public:
     Color() {}
     //! Conversion constructor for literals of the form 0xaarrggbb.
     Color(unsigned argb)
-    : Color((argb >> 24) & 0xff, (argb >> 16) & 0xff, (argb >> 8) & 0xff, (argb >> 0) & 0xff)
+    : Color((argb >> 24) & 0xff, (argb >> 16) & 0xff, (argb >> 8) & 0xff, argb & 0xff)
     {}
     Color(Channel red, Channel green, Channel blue)
     : Color(0xff, red, green, blue)
